@@ -34,7 +34,7 @@ from database.credits_client import (
 # Import handlerów kredytów
 from handlers.credit_handler import (
     credits_command, buy_command, handle_credit_callback,
-    credit_stats_command, credit_analytics_command  # Add this function
+    credit_stats_command, credit_analytics_command
 )
 
 # Import handlerów kodu aktywacyjnego
@@ -53,7 +53,7 @@ from handlers.start_handler import (
     start_command, handle_language_selection
 )
 
-# Import handlera obrazów - DODANE ROZWIĄZANIE
+# Import handlera obrazów
 from handlers.image_handler import generate_image
 
 from utils.openai_client import (
@@ -61,11 +61,9 @@ from utils.openai_client import (
     generate_image_dall_e, analyze_document, analyze_image
 )
 
-# Dodaj importy na górze pliku
+# Import handlera eksportu
 from handlers.export_handler import export_conversation
 from handlers.theme_handler import theme_command, notheme_command, handle_theme_callback
-from handlers.reminder_handler import remind_command, reminders_command, handle_reminder_callback, check_due_reminders
-from handlers.note_handler import note_command, notes_command, handle_note_callback
 from utils.credit_analytics import generate_credit_usage_chart, generate_usage_breakdown_chart
 
 
@@ -558,6 +556,10 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     # Obsługa innych callbacków (ustawienia, historia itp.)
     elif query.data.startswith("settings_") or query.data.startswith("lang_") or query.data.startswith("history_"):
         await handle_settings_callback(update, context)
+    
+    # Obsługa przycisków tematów
+    elif query.data.startswith("theme_") or query.data == "new_theme" or query.data == "no_theme":
+        await handle_theme_callback(update, context)
 
 async def handle_model_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, model_id):
     """Obsługa wyboru modelu AI"""
@@ -765,31 +767,18 @@ def main():
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     
+    # Handler eksportu
+    application.add_handler(CommandHandler("export", export_conversation))
+    
+    # Handlery tematów konwersacji
+    application.add_handler(CommandHandler("theme", theme_command))
+    application.add_handler(CommandHandler("notheme", notheme_command))
+    
     # Dodanie handlera zapytań zwrotnych (z przycisków)
     application.add_handler(CallbackQueryHandler(handle_callback_query))
     
     # Dodanie handlera wiadomości tekstowych (musi być na końcu)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
-
-    # W funkcji main(), po istniejących handlerach dodaj:
-    application.add_handler(CommandHandler("export", export_conversation))
-
-    # Handlery tematów konwersacji
-    application.add_handler(CommandHandler("theme", theme_command))
-    application.add_handler(CommandHandler("notheme", notheme_command))
-
-    # Handlery przypomnień i notatek
-    application.add_handler(CommandHandler("remind", remind_command))
-    application.add_handler(CommandHandler("reminders", reminders_command))
-    application.add_handler(CommandHandler("note", note_command))
-    application.add_handler(CommandHandler("notes", notes_command))
-
-    # Handler rozszerzonego monitorowania kredytów
-    application.add_handler(CommandHandler("creditstats", credit_stats_command))
-
-    # Uruchom cykliczne sprawdzanie przypomnień
-    job_queue = application.job_queue
-    job_queue.run_repeating(check_due_reminders, interval=60)  # Sprawdzaj co 60 sekund
     
     # Uruchomienie bota
     application.run_polling()
