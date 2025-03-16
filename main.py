@@ -4,6 +4,7 @@ import re
 import datetime
 import pytz
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import ReplyKeyboardRemove
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, 
     CallbackQueryHandler, ContextTypes, filters
@@ -44,7 +45,7 @@ from handlers.code_handler import (
 
 # Import handlerów menu
 from handlers.menu_handler import (
-    show_main_menu, handle_menu_selection, handle_settings_callback,
+    show_main_menu, handle_menu_callback,
     set_user_name, get_user_language
 )
 
@@ -79,6 +80,19 @@ ADMIN_USER_IDS = [1743680448, 787188598]  # Zastąp swoim ID użytkownika Telegr
 
 # Handlers dla podstawowych komend
 
+from telegram import ReplyKeyboardRemove
+
+async def remove_keyboard(update, context):
+    """Usuwa klawiaturę systemową bota i zastępuje ją pustą"""
+    await update.message.reply_text(
+        "Klawiatura została usunięta. Używam teraz tylko menu inline.",
+        reply_markup=ReplyKeyboardRemove()
+    )
+    
+    # Pokaż menu główne
+    from handlers.menu_handler import show_main_menu
+    await show_main_menu(update, context)
+
 async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Obsługa komendy /restart
@@ -86,6 +100,9 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     user_id = update.effective_user.id
     language = get_user_language(context, user_id)
+    
+    # Usuń klawiaturę systemową
+    await update.message.reply_text("Usuwam klawiaturę...", reply_markup=ReplyKeyboardRemove())
     
     # Resetowanie konwersacji - tworzymy nową konwersację i czyścimy kontekst
     conversation = create_new_conversation(user_id)
@@ -750,10 +767,12 @@ Dostępne kredyty: *{credits}*
 # Główna funkcja uruchamiająca bota
 
 def main():
-"""Funkcja uruchamiająca bota"""
+    """Funkcja uruchamiająca bota"""
     # Inicjalizacja aplikacji
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
+    application.add_handler(CommandHandler("removekeyboard", remove_keyboard))
+
     # Dodanie handlerów komend
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("status", check_status))

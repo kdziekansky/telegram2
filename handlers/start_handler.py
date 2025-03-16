@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import BOT_NAME, AVAILABLE_LANGUAGES
@@ -73,6 +73,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     user = update.effective_user
     language = "pl"  # Domyślny język
+    
+    # Usuwamy klawiaturę systemową
+    await update.message.reply_text("Inicjuję...", reply_markup=ReplyKeyboardRemove())
     
     # Sprawdź, czy użytkownik ma już ustawiony język w bazie
     user_data = get_or_create_user(
@@ -215,7 +218,7 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
                 
             async def reply_text(self, text, **kwargs):
                 return await context.bot.send_message(
-                    chat_id=self.chat_id,  # Poprawione z chat_id na self.chat_id
+                    chat_id=self.chat_id,
                     text=text,
                     **kwargs
                 )
