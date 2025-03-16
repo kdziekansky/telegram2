@@ -277,11 +277,6 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     language = get_user_language(context, user_id)
     
-    # Sprawdź, czy to nie jest komenda z menu
-    is_menu_command = await handle_menu_selection(update, context)
-    if is_menu_command:
-        return
-    
     # Określ tryb i koszt kredytów
     current_mode = "no_mode"
     credit_cost = 1
@@ -303,6 +298,10 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Zapisz wiadomość użytkownika do bazy danych
     save_message(conversation_id, user_id, user_message, is_from_user=True)
+    
+    # Wyświetl menu kontekstowe jeśli odpowiednie
+    from handlers.menu_handler import show_contextual_menu
+    await show_contextual_menu(update, context, user_message)
     
     # Wyślij informację, że bot pisze
     await update.message.chat.send_action(action=ChatAction.TYPING)
@@ -368,9 +367,12 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Sprawdź aktualny stan kredytów
     credits = get_user_credits(user_id)
     if credits < 5:
+        # Dodaj przycisk doładowania kredytów
+        keyboard = [[InlineKeyboardButton("🛒 " + get_text("buy_credits_btn", language, default="Kup kredyty"), callback_data="menu_credits_buy")]]
+        
         await update.message.reply_text(
-            f"*Uwaga:* Pozostało Ci tylko *{credits}* kredytów. "
-            f"Kup więcej za pomocą komendy /buy.",
+            f"*{get_text('low_credits_warning', language)}* {get_text('low_credits_message', language, credits=credits)}",
+            reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode=ParseMode.MARKDOWN
         )
 
@@ -472,6 +474,20 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Obsługa zapytań zwrotnych (z przycisków)"""
     query = update.callback_query
+    
+    # Najpierw sprawdzamy, czy to callback związany z menu
+    from handlers.menu_handler import handle_menu_callback, handle_contextual_menu_callback
+    
+    # Obsługa menu głównego i kontekstowego
+    menu_handled = await handle_menu_callback(update, context)
+    if menu_handled:
+        return
+        
+    context_handled = await handle_contextual_menu_callback(update, context)
+    if context_handled:
+        return
+    
+    # Poniżej znajduje się obsługa pozostałych callbacków
     await query.answer()  # Odpowiedz na callback_query, aby usunąć "zegar oczekiwania"
     
     user_id = query.from_user.id
@@ -535,31 +551,30 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await show_main_menu(fake_update, context)
         return
     
-    # Obsługa wybrania modelu
-    if query.data.startswith("model_"):
-        model_id = query.data[6:]  # Pobierz ID modelu (usuń prefix "model_")
-        await handle_model_selection(update, context, model_id)
-    
-    # Obsługa wybrania trybu czatu
-    elif query.data.startswith("mode_"):
-        mode_id = query.data[5:]  # Pobierz ID trybu (usuń prefix "mode_")
-        await handle_mode_selection(update, context, mode_id)
-    
-    # Obsługa przycisków kredytów
-    elif query.data.startswith("buy_") or query.data == "buy_credits":
-        await handle_credit_callback(update, context)
-    
-    # Obsługa callbacków języka przy pierwszym uruchomieniu
-    elif query.data.startswith("start_lang_"):
-        await handle_language_selection(update, context)
-    
-    # Obsługa innych callbacków (ustawienia, historia itp.)
-    elif query.data.startswith("settings_") or query.data.startswith("lang_") or query.data.startswith("history_"):
-        await handle_settings_callback(update, context)
-    
-    # Obsługa przycisków tematów
-    elif query.data.startswith("theme_") or query.data == "new_theme" or query.data == "no_theme":
-        await handle_theme_callback(update, context)
+    # Obsługa historii rozmów
+    elif query.data == "history_confirm_delete":
+        user_id = query.from_user.id
+        # Twórz nową konwersację (efektywnie "usuwając" historię)
+        conversation = create_new_conversation(user_id)
+        
+        if conversation:
+            from handlers.menu_handler import update_menu
+            await update_menu(update, context, 'history')
+        else:
+            await query.edit_message_text(
+                "Wystąpił błąd podczas czyszczenia historii.",
+                parse_mode=ParseMode.MARKDOWN
+            )
+        return
+
+async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Obsługa komendy /menu
+    Wyświetla menu główne bota
+    """
+    from handlers.menu_handler import show_main_menu
+    await show_main_menu(update, context)
+
 
 async def handle_model_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, model_id):
     """Obsługa wyboru modelu AI"""
@@ -735,7 +750,7 @@ Dostępne kredyty: *{credits}*
 # Główna funkcja uruchamiająca bota
 
 def main():
-    """Funkcja uruchamiająca bota"""
+"""Funkcja uruchamiająca bota"""
     # Inicjalizacja aplikacji
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
@@ -747,7 +762,7 @@ def main():
     application.add_handler(CommandHandler("mode", show_modes))
     application.add_handler(CommandHandler("image", generate_image))
     application.add_handler(CommandHandler("restart", restart_command))
-    application.add_handler(CommandHandler("menu", menu_command))
+    application.add_handler(CommandHandler("menu", menu_command))  # Nowa obsługa menu
     application.add_handler(CommandHandler("setname", set_user_name))
     
     # Dodanie handlerów kodów aktywacyjnych
