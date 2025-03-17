@@ -169,10 +169,9 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 *{get_text("status", language)}:*
 {get_text("credits", language)}: *{credits}*
 {get_text("current_mode", language)}: *{mode_name}*
-{get_text("current_model", language)}: *{model_name}*"""
+{get_text("current_model", language)}: *{model_name}*
 
-{get_text("select_option", language, default="Wybierz opcję z menu poniżej:")}
-"""
+{get_text("select_option", language, default="Wybierz opcję z menu poniżej:")}"""
     
     # Utwórz klawiaturę menu
     reply_markup = create_main_menu_markup(language)
@@ -220,11 +219,7 @@ async def update_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, menu_s
 💬 {get_text("current_mode", language, default="Aktualny tryb")}: *{mode_name}*
 🤖 {get_text("current_model", language, default="Model")}: *{model_name}*
 
-{get_text("select_option", language, default="Wybierz opcję z menu poniżej:")}
-"""
-
-{get_text("select_option", language, default="Wybierz opcję z menu poniżej:")}
-"""
+{get_text("select_option", language, default="Wybierz opcję z menu poniżej:")}"""
         if not markup:
             markup = create_main_menu_markup(language)
     
@@ -330,6 +325,8 @@ async def handle_contextual_menu_callback(update: Update, context: ContextTypes.
     
     return False
 
+# Zastąp funkcję handle_menu_callback w pliku handlers/menu_handler.py poniższym kodem
+
 async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Obsługuje wszystkie callbacki związane z menu
@@ -339,24 +336,132 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     """
     query = update.callback_query
     
+    # Debugowanie
+    print(f"Menu handler otrzymał callback: {query.data}")
+    
     # Sprawdź, czy to callback związany z menu
-    if not query.data.startswith("menu_") and not query.data.startswith("buy_package_"):
+    if not query.data.startswith("menu_"):
         return False
     
     user_id = query.from_user.id
     language = get_user_language(context, user_id)
     
-    # Obsługa nawigacji menu
-    if query.data == "menu_back_main":
-        await query.answer()
-        await update_menu(update, context, 'main')
+    # Obsługa przycisków menu
+    if query.data == "menu_section_chat_modes":
+        # Utworzenie menu trybów czatu
+        keyboard = []
+        for mode_id, mode_info in CHAT_MODES.items():
+            keyboard.append([
+                InlineKeyboardButton(
+                    mode_info['name'], 
+                    callback_data=f"mode_{mode_id}"
+                )
+            ])
+        
+        # Dodaj przycisk powrotu
+        keyboard.append([
+            InlineKeyboardButton("Powrót", callback_data="menu_back_main")
+        ])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "Wybierz tryb czatu:",
+            reply_markup=reply_markup
+        )
+        return True
+        
+    elif query.data == "menu_section_credits":
+        # Menu kredytów
+        keyboard = [
+            [InlineKeyboardButton("Sprawdź saldo", callback_data="credits_check")],
+            [InlineKeyboardButton("Kup kredyty", callback_data="credits_buy")],
+            [InlineKeyboardButton("Powrót", callback_data="menu_back_main")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            f"Kredyty: {get_user_credits(user_id)}\nWybierz opcję:",
+            reply_markup=reply_markup
+        )
+        return True
+        
+    elif query.data == "menu_image_generate":
+        # Menu generowania obrazów
+        keyboard = [
+            [InlineKeyboardButton("Powrót", callback_data="menu_back_main")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "Aby wygenerować obraz, użyj komendy:\n/image [opis obrazu]",
+            reply_markup=reply_markup
+        )
+        return True
+        
+    elif query.data == "menu_section_history":
+        # Menu historii
+        keyboard = [
+            [InlineKeyboardButton("Nowa konwersacja", callback_data="history_new")],
+            [InlineKeyboardButton("Eksportuj", callback_data="history_export")],
+            [InlineKeyboardButton("Powrót", callback_data="menu_back_main")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "Historia rozmów - wybierz opcję:",
+            reply_markup=reply_markup
+        )
+        return True
+        
+    elif query.data == "menu_section_settings":
+        # Menu ustawień
+        keyboard = [
+            [InlineKeyboardButton("Zmień model AI", callback_data="settings_model")],
+            [InlineKeyboardButton("Zmień język", callback_data="settings_language")],
+            [InlineKeyboardButton("Powrót", callback_data="menu_back_main")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "Ustawienia - wybierz opcję:",
+            reply_markup=reply_markup
+        )
+        return True
+        
+    elif query.data == "menu_help":
+        # Menu pomocy
+        keyboard = [
+            [InlineKeyboardButton("Powrót", callback_data="menu_back_main")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "Pomoc:\n\n/start - Start\n/credits - Sprawdź kredyty\n/buy - Kup kredyty\n/image - Generuj obraz",
+            reply_markup=reply_markup
+        )
+        return True
+        
+    elif query.data == "menu_back_main":
+        # Powrót do głównego menu
+        keyboard = [
+            [
+                InlineKeyboardButton("🔄 Tryb czatu", callback_data="menu_section_chat_modes"),
+                InlineKeyboardButton("🖼️ Generuj obraz", callback_data="menu_image_generate")
+            ],
+            [
+                InlineKeyboardButton("💰 Kredyty", callback_data="menu_section_credits"),
+                InlineKeyboardButton("📂 Historia", callback_data="menu_section_history")
+            ],
+            [
+                InlineKeyboardButton("⚙️ Ustawienia", callback_data="menu_section_settings"),
+                InlineKeyboardButton("❓ Pomoc", callback_data="menu_help")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            f"Menu główne\n\nStatus:\nKredyty: {get_user_credits(user_id)}\nWybierz opcję z menu poniżej:",
+            reply_markup=reply_markup
+        )
         return True
     
-    # ... [pozostałe obsługi menu - zachowaj istniejącą implementację]
-    
+    print(f"Nieobsłużony callback menu: {query.data}")
     return False
-
-# ... [pozostałe funkcje obsługujące akcje menu]
 
 # Funkcja do wyświetlania menu kontekstowego po wiadomości użytkownika
 async def show_contextual_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, user_message):

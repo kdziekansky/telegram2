@@ -69,15 +69,15 @@ def get_user_language(context, user_id):
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Obsługa komendy /start
-    Tworzy lub pobiera użytkownika z bazy danych i wyświetla wiadomość powitalną
+    Tworzy lub pobiera użytkownika z bazy danych i wyświetla wiadomość powitalną z menu
     """
     user = update.effective_user
-    language = "pl"  # Domyślny język
     
-    # Usuwamy klawiaturę systemową
-    await update.message.reply_text("Inicjuję...", reply_markup=ReplyKeyboardRemove())
+    # Usuwamy klawiaturę systemową bez komunikatu
+    await update.message.reply_text("", reply_markup=ReplyKeyboardRemove())
+    await update.message.delete()
     
-    # Sprawdź, czy użytkownik ma już ustawiony język w bazie
+    # Sprawdź, czy użytkownik istnieje w bazie
     user_data = get_or_create_user(
         user_id=user.id,
         username=user.username,
@@ -86,24 +86,98 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         language_code=user.language_code
     )
     
+    # Ustaw domyślny język
+    language = "pl"
     if user_data and 'language' in user_data and user_data['language']:
         language = user_data['language']
     
-    # Sprawdź, czy istnieje kod referencyjny w argumencie start
-    if context.args and len(context.args) > 0:
-        start_param = context.args[0]
-        
-        # Obsługa kodu referencyjnego (format: ref_XXXXX)
-        if start_param.startswith("ref_"):
-            ref_code = start_param[4:]
-            success, referrer_id = use_referral_code(user.id, ref_code)
-            
-            if success:
-                # Dodaj kredyty dla obu stron (zaimplementowane w prawdziwym use_referral_code)
-                await update.message.reply_text(
-                    get_text("referral_success", language, credits=25),
-                    parse_mode=ParseMode.MARKDOWN
-                )
+    # Zapisz język w kontekście
+    if 'user_data' not in context.chat_data:
+        context.chat_data['user_data'] = {}
+    
+    if user.id not in context.chat_data['user_data']:
+        context.chat_data['user_data'][user.id] = {}
+    
+    context.chat_data['user_data'][user.id]['language'] = language
+    
+    # Pobierz stan kredytów
+    credits = get_user_credits(user.id)
+    
+    # Utwórz wiadomość powitalną
+    welcome_text = f"""Witaj w {BOT_NAME}! 🤖✨
+
+Jestem zaawansowanym botem AI, który pomoże Ci w wielu zadaniach - od odpowiadania na pytania po generowanie obrazów.
+
+Dostępne komendy:
+/start - Pokaż tę wiadomość
+/credits - Sprawdź saldo kredytów
+/buy - Kup pakiet kredytów
+/status - Sprawdź stan konta
+/newchat - Rozpocznij nową konwersację
+/mode - Wybierz tryb czatu
+/image [opis] - Wygeneruj obraz
+/menu - Pokaż menu główne
+
+Używanie bota:
+1. Po prostu wpisz wiadomość, aby otrzymać odpowiedź
+2. Użyj przycisków menu, aby uzyskać dostęp do funkcji
+3. Możesz przesyłać zdjęcia i dokumenty do analizy
+
+Wsparcie:
+Jeśli potrzebujesz pomocy, skontaktuj się z nami: @twojkontaktwsparcia
+
+Twój aktualny stan kredytów: {credits} kredytów
+
+Wybierz opcję z menu poniżej:"""
+    
+    # Utwórz klawiaturę menu
+    keyboard = [
+        [
+            InlineKeyboardButton("🔄 Tryb czatu", callback_data="menu_section_chat_modes"),
+            InlineKeyboardButton("🖼️ Generuj obraz", callback_data="menu_image_generate")
+        ],
+        [
+            InlineKeyboardButton("💰 Kredyty", callback_data="menu_section_credits"),
+            InlineKeyboardButton("📂 Historia", callback_data="menu_section_history")
+        ],
+        [
+            InlineKeyboardButton("⚙️ Ustawienia", callback_data="menu_section_settings"),
+            InlineKeyboardButton("❓ Pomoc", callback_data="menu_help")
+        ]
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Wyślij wiadomość powitalną z menu
+    await update.message.reply_text(
+        welcome_text,
+        reply_markup=reply_markup
+    )
+
+    
+    # Utwórz klawiaturę menu
+    keyboard = [
+        [
+            InlineKeyboardButton("🔄 Tryb czatu", callback_data="menu_section_chat_modes"),
+            InlineKeyboardButton("🖼️ Generuj obraz", callback_data="menu_image_generate")
+        ],
+        [
+            InlineKeyboardButton("💰 Kredyty", callback_data="menu_section_credits"),
+            InlineKeyboardButton("📂 Historia", callback_data="menu_section_history")
+        ],
+        [
+            InlineKeyboardButton("⚙️ Ustawienia", callback_data="menu_section_settings"),
+            InlineKeyboardButton("❓ Pomoc", callback_data="menu_help")
+        ]
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Wyślij wiadomość powitalną z menu
+    await update.message.reply_text(
+        welcome_text,
+        reply_markup=reply_markup
+    )
     
     # Jeśli użytkownik nie ma jeszcze języka, zaproponuj wybór
     if not user_data or 'language' not in user_data or not user_data['language']:
@@ -130,16 +204,17 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if message_status["messages_left"] > 0:
         welcome_text += f"\nPozostało wiadomości: {message_status['messages_left']}"
     
-    # ZAMIAST wysyłać osobną wiadomość i potem pokazywać menu, zrób to razem
     # Pobierz dane potrzebne dla menu
     current_mode = get_user_current_mode(context, user.id)
     current_model = get_user_current_model(context, user.id)
     
     # Przygotuj informacje o aktualnym trybie i modelu
+    from config import CHAT_MODES, AVAILABLE_MODELS
     mode_name = CHAT_MODES[current_mode]["name"] if current_mode in CHAT_MODES else "Standard"
     model_name = AVAILABLE_MODELS[current_model] if current_model in AVAILABLE_MODELS else "GPT-3.5"
     
     # Utwórz klawiaturę menu
+    from handlers.menu_handler import create_main_menu_markup
     reply_markup = create_main_menu_markup(language)
     
     # Wyślij wiadomość powitalną z menu
@@ -150,10 +225,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     
     # Zapisz ID wiadomości menu i stan menu
+    from handlers.menu_handler import store_menu_state
     store_menu_state(context, user.id, 'main', message.message_id)
-    
-    # Usuń wywołanie show_main_menu, ponieważ menu jest już wyświetlane
-    # await show_main_menu(update, context)
 
 async def show_language_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -220,31 +293,27 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
     if message_status["messages_left"] > 0:
         welcome_text += f"\nPozostało wiadomości: {message_status['messages_left']}"
     
+    # Pobierz dane potrzebne dla menu
+    from handlers.menu_handler import get_user_current_mode, get_user_current_model
+    current_mode = get_user_current_mode(context, user_id)
+    current_model = get_user_current_model(context, user_id)
+    
+    # Przygotuj informacje o aktualnym trybie i modelu
+    from config import CHAT_MODES, AVAILABLE_MODELS
+    mode_name = CHAT_MODES[current_mode]["name"] if current_mode in CHAT_MODES else "Standard"
+    model_name = AVAILABLE_MODELS[current_model] if current_model in AVAILABLE_MODELS else "GPT-3.5"
+    
+    # Utwórz klawiaturę menu
+    from handlers.menu_handler import create_main_menu_markup
+    reply_markup = create_main_menu_markup(language)
+    
     # Aktualizuj wiadomość
-    await query.edit_message_text(
+    message = await query.edit_message_text(
         welcome_text,
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=reply_markup
     )
     
-    # Pokaż menu główne
-    from handlers.menu_handler import show_main_menu
-    
-    # Utwórz fałszywy obiekt update, aby móc użyć show_main_menu
-    class FakeUpdate:
-        class FakeMessage:
-            def __init__(self, chat_id):
-                self.chat_id = chat_id
-                
-            async def reply_text(self, text, **kwargs):
-                return await context.bot.send_message(
-                    chat_id=self.chat_id,
-                    text=text,
-                    **kwargs
-                )
-        
-        def __init__(self, chat_id, user):
-            self.message = self.FakeMessage(chat_id)
-            self.effective_user = user
-    
-    fake_update = FakeUpdate(query.message.chat_id, query.from_user)
-    await show_main_menu(fake_update, context)
+    # Zapisz ID wiadomości menu i stan menu
+    from handlers.menu_handler import store_menu_state
+    store_menu_state(context, user_id, 'main', message.message_id)

@@ -4,6 +4,8 @@ import base64
 import os
 import asyncio
 from config import OPENAI_API_KEY, DEFAULT_MODEL, DEFAULT_SYSTEM_PROMPT, DALL_E_MODEL
+print(f"API Key is {'set' if OPENAI_API_KEY else 'NOT SET'}")
+print(f"API Key length: {len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}")
 
 # Inicjalizacja klienta OpenAI
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -20,6 +22,12 @@ async def chat_completion_stream(messages, model=DEFAULT_MODEL):
         async generator: Generator zwracający fragmenty odpowiedzi
     """
     try:
+        print(f"Wywołuję OpenAI API z modelem {model}")
+        # Dodaj opóźnienie w przypadku gdy używamy GPT-4 (aby uniknąć rate limitów)
+        if "gpt-4" in model:
+            import asyncio
+            await asyncio.sleep(0.5)
+            
         stream = await client.chat.completions.create(
             model=model,
             messages=messages,
@@ -30,8 +38,10 @@ async def chat_completion_stream(messages, model=DEFAULT_MODEL):
             if chunk.choices and chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content
     except Exception as e:
-        print(f"Błąd API OpenAI (stream): {e}")
-        yield f"Przepraszam, wystąpił błąd podczas generowania odpowiedzi: {str(e)}"
+        error_msg = f"Błąd API OpenAI (stream): {str(e)}"
+        print(error_msg)
+        yield error_msg
+
 
 async def chat_completion(messages, model=DEFAULT_MODEL):
     """

@@ -45,8 +45,7 @@ from handlers.code_handler import (
 
 # Import handlerów menu
 from handlers.menu_handler import (
-    show_main_menu, handle_menu_callback,
-    set_user_name, get_user_language
+    handle_menu_callback, set_user_name, get_user_language
 )
 
 # Import handlera start
@@ -67,7 +66,6 @@ from handlers.export_handler import export_conversation
 from handlers.theme_handler import theme_command, notheme_command, handle_theme_callback
 from utils.credit_analytics import generate_credit_usage_chart, generate_usage_breakdown_chart
 
-
 # Konfiguracja loggera
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -80,19 +78,6 @@ ADMIN_USER_IDS = [1743680448, 787188598]  # Zastąp swoim ID użytkownika Telegr
 
 # Handlers dla podstawowych komend
 
-from telegram import ReplyKeyboardRemove
-
-async def remove_keyboard(update, context):
-    """Usuwa klawiaturę systemową bota i zastępuje ją pustą"""
-    await update.message.reply_text(
-        "Klawiatura została usunięta. Używam teraz tylko menu inline.",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    
-    # Pokaż menu główne
-    from handlers.menu_handler import show_main_menu
-    await show_main_menu(update, context)
-
 async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Obsługa komendy /restart
@@ -100,9 +85,6 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     user_id = update.effective_user.id
     language = get_user_language(context, user_id)
-    
-    # Usuń klawiaturę systemową
-    await update.message.reply_text("Usuwam klawiaturę...", reply_markup=ReplyKeyboardRemove())
     
     # Resetowanie konwersacji - tworzymy nową konwersację i czyścimy kontekst
     conversation = create_new_conversation(user_id)
@@ -143,33 +125,86 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     language_name = AVAILABLE_LANGUAGES.get(language, language)
     
     # Przygotowanie wiadomości
-    restart_text = f"""
-🔄 *{BOT_NAME} został zrestartowany*
+    restart_text = f"""🔄 *{BOT_NAME} został zrestartowany*
 
 {get_text("help_text", language)}
-"""
+
+*Ustawienia*
+🔄 Wybierz tryb czatu: {current_mode} (kredyty: {current_mode_cost})
+🤖 Model AI: {current_model}
+🌐 Język: {language_name}
+💰 Saldo (Kredyty): {credits} kredyty
+
+✅ Bot został zrestartowany! Wszystkie elementy interfejsu są teraz w języku: {language_name}"""
+
+    # Utwórz klawiaturę menu
+    keyboard = [
+        [
+            InlineKeyboardButton("🔄 Tryb czatu", callback_data="menu_section_chat_modes"),
+            InlineKeyboardButton("🖼️ Generuj obraz", callback_data="menu_image_generate")
+        ],
+        [
+            InlineKeyboardButton("💰 Kredyty", callback_data="menu_section_credits"),
+            InlineKeyboardButton("📂 Historia", callback_data="menu_section_history")
+        ],
+        [
+            InlineKeyboardButton("⚙️ Ustawienia", callback_data="menu_section_settings"),
+            InlineKeyboardButton("❓ Pomoc", callback_data="menu_help")
+        ]
+    ]
     
-    # Dodaj informacje o aktualnych ustawieniach
-    restart_text += f"\n*{get_text('settings_title', language)}*"
-    restart_text += f"\n{get_text('menu_chat_mode', language)}: {current_mode} ({get_text('credits', language)}: {current_mode_cost})"
-    restart_text += f"\n{get_text('settings_model', language)}: {current_model}"
-    restart_text += f"\n{get_text('settings_language', language)}: {language_name}"
-    restart_text += f"\n{get_text('menu_balance', language)}: *{credits}* {get_text('credits', language)}"
+    reply_markup = InlineKeyboardMarkup(keyboard)
     
-    # Dodaj informację o restarcie bota
-    restart_text += f"\n\n{get_text('language_restart_complete', language, language_display=language_name)}"
-    
-    await update.message.reply_text(restart_text, parse_mode=ParseMode.MARKDOWN)
-    
-    # Pokaż menu główne
-    await show_main_menu(update, context)
+    await update.message.reply_text(restart_text, 
+                                   parse_mode=ParseMode.MARKDOWN,
+                                   reply_markup=reply_markup)
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Obsługa komendy /menu
-    Wyświetla menu główne bota
-    """
-    await show_main_menu(update, context)
+    """Obsługa komendy /menu - wyświetla menu główne bota z przyciskami inline"""
+    user_id = update.effective_user.id
+    language = "pl"
+    if 'user_data' in context.chat_data and user_id in context.chat_data['user_data'] and 'language' in context.chat_data['user_data'][user_id]:
+        language = context.chat_data['user_data'][user_id]['language']
+    
+    # Pobierz stan kredytów
+    credits = get_user_credits(user_id)
+    
+    # Pobierz aktualny tryb i model
+    current_mode = "brak"
+    current_model = DEFAULT_MODEL
+    if 'user_data' in context.chat_data and user_id in context.chat_data['user_data']:
+        user_data = context.chat_data['user_data'][user_id]
+        if 'current_mode' in user_data and user_data['current_mode'] in CHAT_MODES:
+            current_mode = CHAT_MODES[user_data['current_mode']]["name"]
+        if 'current_model' in user_data and user_data['current_model'] in AVAILABLE_MODELS:
+            current_model = AVAILABLE_MODELS[user_data['current_model']]
+    
+    # Utwórz klawiaturę menu
+    keyboard = [
+        [
+            InlineKeyboardButton("🔄 Tryb czatu", callback_data="menu_section_chat_modes"),
+            InlineKeyboardButton("🖼️ Generuj obraz", callback_data="menu_image_generate")
+        ],
+        [
+            InlineKeyboardButton("💰 Kredyty", callback_data="menu_section_credits"),
+            InlineKeyboardButton("📂 Historia", callback_data="menu_section_history")
+        ],
+        [
+            InlineKeyboardButton("⚙️ Ustawienia", callback_data="menu_section_settings"),
+            InlineKeyboardButton("❓ Pomoc", callback_data="menu_help")
+        ]
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Utwórz tekst menu
+    menu_text = f"Menu główne\n\nStatus:\nKredyty: {credits}\nTryb: {current_mode}\nModel: {current_model}\n\nWybierz opcję z menu poniżej:"
+    
+    # Wyślij menu
+    await update.message.reply_text(
+        menu_text,
+        reply_markup=reply_markup
+    )
 
 async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -294,6 +329,8 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     language = get_user_language(context, user_id)
     
+    print(f"Otrzymano wiadomość od użytkownika {user_id}: {user_message}")
+    
     # Określ tryb i koszt kredytów
     current_mode = "no_mode"
     credit_cost = 1
@@ -304,27 +341,43 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             current_mode = user_data['current_mode']
             credit_cost = CHAT_MODES[current_mode]["credit_cost"]
     
+    print(f"Tryb: {current_mode}, koszt kredytów: {credit_cost}")
+    
     # Sprawdź, czy użytkownik ma wystarczającą liczbę kredytów
-    if not check_user_credits(user_id, credit_cost):
+    has_credits = check_user_credits(user_id, credit_cost)
+    print(f"Czy użytkownik ma wystarczająco kredytów: {has_credits}")
+    
+    if not has_credits:
         await update.message.reply_text(get_text("subscription_expired", language))
         return
     
     # Pobierz lub utwórz aktywną konwersację
-    conversation = get_active_conversation(user_id)
-    conversation_id = conversation['id']
+    try:
+        conversation = get_active_conversation(user_id)
+        conversation_id = conversation['id']
+        print(f"Aktywna konwersacja: {conversation_id}")
+    except Exception as e:
+        print(f"Błąd przy pobieraniu konwersacji: {e}")
+        await update.message.reply_text("Wystąpił błąd przy pobieraniu konwersacji. Spróbuj /newchat aby utworzyć nową.")
+        return
     
     # Zapisz wiadomość użytkownika do bazy danych
-    save_message(conversation_id, user_id, user_message, is_from_user=True)
-    
-    # Wyświetl menu kontekstowe jeśli odpowiednie
-    from handlers.menu_handler import show_contextual_menu
-    await show_contextual_menu(update, context, user_message)
+    try:
+        save_message(conversation_id, user_id, user_message, is_from_user=True)
+        print("Wiadomość użytkownika zapisana w bazie")
+    except Exception as e:
+        print(f"Błąd przy zapisie wiadomości użytkownika: {e}")
     
     # Wyślij informację, że bot pisze
     await update.message.chat.send_action(action=ChatAction.TYPING)
     
     # Pobierz historię konwersacji
-    history = get_conversation_history(conversation_id, limit=MAX_CONTEXT_MESSAGES)
+    try:
+        history = get_conversation_history(conversation_id, limit=MAX_CONTEXT_MESSAGES)
+        print(f"Pobrano historię konwersacji, liczba wiadomości: {len(history)}")
+    except Exception as e:
+        print(f"Błąd przy pobieraniu historii: {e}")
+        history = []
     
     # Określ model do użycia - domyślny lub z trybu czatu
     model_to_use = CHAT_MODES[current_mode].get("model", DEFAULT_MODEL)
@@ -337,11 +390,14 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Aktualizuj koszt kredytów na podstawie modelu
             credit_cost = CREDIT_COSTS["message"].get(model_to_use, CREDIT_COSTS["message"]["default"])
     
+    print(f"Używany model: {model_to_use}")
+    
     # Przygotuj system prompt z wybranego trybu
     system_prompt = CHAT_MODES[current_mode]["prompt"]
     
     # Przygotuj wiadomości dla API OpenAI
     messages = prepare_messages_from_history(history, user_message, system_prompt)
+    print(f"Przygotowano {len(messages)} wiadomości dla API")
     
     # Wyślij początkową pustą wiadomość, którą będziemy aktualizować
     response_message = await update.message.reply_text(get_text("generating_response", language))
@@ -351,35 +407,46 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buffer = ""
     last_update = datetime.datetime.now().timestamp()
     
-    # Generuj odpowiedź strumieniowo
-    async for chunk in chat_completion_stream(messages, model=model_to_use):
-        full_response += chunk
-        buffer += chunk
-        
-        # Aktualizuj wiadomość co 1 sekundę lub gdy bufor jest wystarczająco duży
-        current_time = datetime.datetime.now().timestamp()
-        if current_time - last_update >= 1.0 or len(buffer) > 100:
-            try:
-                # Dodaj migający kursor na końcu wiadomości
-                await response_message.edit_text(full_response + "▌", parse_mode=ParseMode.MARKDOWN)
-                buffer = ""
-                last_update = current_time
-            except Exception as e:
-                # Jeśli wystąpi błąd (np. wiadomość nie została zmieniona), kontynuuj
-                pass
-                
-    # Aktualizuj wiadomość z pełną odpowiedzią bez kursora
+    # Spróbuj wygenerować odpowiedź
     try:
-        await response_message.edit_text(full_response, parse_mode=ParseMode.MARKDOWN)
+        print("Rozpoczynam generowanie odpowiedzi strumieniowej...")
+        # Generuj odpowiedź strumieniowo
+        async for chunk in chat_completion_stream(messages, model=model_to_use):
+            full_response += chunk
+            buffer += chunk
+            
+            # Aktualizuj wiadomość co 1 sekundę lub gdy bufor jest wystarczająco duży
+            current_time = datetime.datetime.now().timestamp()
+            if current_time - last_update >= 1.0 or len(buffer) > 100:
+                try:
+                    # Dodaj migający kursor na końcu wiadomości
+                    await response_message.edit_text(full_response + "▌", parse_mode=ParseMode.MARKDOWN)
+                    buffer = ""
+                    last_update = current_time
+                except Exception as e:
+                    # Jeśli wystąpi błąd (np. wiadomość nie została zmieniona), kontynuuj
+                    print(f"Błąd przy aktualizacji wiadomości: {e}")
+        
+        print("Zakończono generowanie odpowiedzi")
+        
+        # Aktualizuj wiadomość z pełną odpowiedzią bez kursora
+        try:
+            await response_message.edit_text(full_response, parse_mode=ParseMode.MARKDOWN)
+        except Exception as e:
+            # Jeśli wystąpi błąd formatowania Markdown, wyślij bez formatowania
+            print(f"Błąd formatowania Markdown: {e}")
+            await response_message.edit_text(full_response)
+        
+        # Zapisz odpowiedź do bazy danych
+        save_message(conversation_id, user_id, full_response, is_from_user=False, model_used=model_to_use)
+        
+        # Odejmij kredyty
+        deduct_user_credits(user_id, credit_cost, f"Wiadomość ({model_to_use})")
+        print(f"Odjęto {credit_cost} kredytów za wiadomość")
     except Exception as e:
-        # Jeśli wystąpi błąd formatowania Markdown, wyślij bez formatowania
-        await response_message.edit_text(full_response)
-    
-    # Zapisz odpowiedź do bazy danych
-    save_message(conversation_id, user_id, full_response, is_from_user=False, model_used=model_to_use)
-    
-    # Odejmij kredyty
-    deduct_user_credits(user_id, credit_cost, f"Wiadomość ({model_to_use})")
+        print(f"Wystąpił błąd podczas generowania odpowiedzi: {e}")
+        await response_message.edit_text(f"Wystąpił błąd podczas generowania odpowiedzi: {str(e)}")
+        return
     
     # Sprawdź aktualny stan kredytów
     credits = get_user_credits(user_id)
@@ -492,26 +559,58 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     """Obsługa zapytań zwrotnych (z przycisków)"""
     query = update.callback_query
     
-    # Najpierw sprawdzamy, czy to callback związany z menu
-    from handlers.menu_handler import handle_menu_callback, handle_contextual_menu_callback
-    
-    # Obsługa menu głównego i kontekstowego
-    menu_handled = await handle_menu_callback(update, context)
-    if menu_handled:
-        return
-        
-    context_handled = await handle_contextual_menu_callback(update, context)
-    if context_handled:
-        return
-    
-    # Poniżej znajduje się obsługa pozostałych callbacków
-    await query.answer()  # Odpowiedz na callback_query, aby usunąć "zegar oczekiwania"
-    
+    # Dodaj debugowanie
+    print(f"Otrzymano callback: {query.data}")
     user_id = query.from_user.id
-    language = get_user_language(context, user_id)
+    
+    # Zawsze odpowiadaj na callback, aby usunąć oczekiwanie
+    await query.answer()
+    
+    # Najpierw sprawdzamy, czy to callback związany z menu
+    if query.data.startswith("menu_"):
+        print(f"Rozpoznano callback menu: {query.data}")
+        try:
+            from handlers.menu_handler import handle_menu_callback
+            result = await handle_menu_callback(update, context)
+            print(f"Wynik obsługi menu: {result}")
+            return
+        except Exception as e:
+            print(f"Błąd w obsłudze menu: {str(e)}")
+            # Kontynuuj do innych obsłużeń
+    
+    # Obsługa wyboru języka
+    if query.data.startswith("start_lang_"):
+        from handlers.start_handler import handle_language_selection
+        await handle_language_selection(update, context)
+        return
+    
+    # Obsługa przycisku wyboru trybu
+    if query.data.startswith("mode_"):
+        mode_id = query.data[5:]  # Pobierz ID trybu (usuń prefix "mode_")
+        await handle_mode_selection(update, context, mode_id)
+        return
+    
+    # Obsługa przycisku wyboru modelu
+    if query.data.startswith("model_"):
+        model_id = query.data[6:]  # Pobierz ID modelu (usuń prefix "model_")
+        await handle_model_selection(update, context, model_id)
+        return
+    
+    # Obsługa tematów konwersacji
+    if query.data.startswith("theme_") or query.data == "new_theme" or query.data == "no_theme":
+        from handlers.theme_handler import handle_theme_callback
+        await handle_theme_callback(update, context)
+        return
+    
+    # Obsługa kredytów
+    if query.data.startswith("buy_") or query.data.startswith("credits_"):
+        from handlers.credit_handler import handle_credit_callback
+        await handle_credit_callback(update, context)
+        return
     
     # Obsługa przycisku restartu bota
     if query.data == "restart_bot":
+        language = get_user_language(context, user_id)
         restart_message = get_text("restarting_bot", language)
         await query.edit_message_text(restart_message)
         
@@ -543,7 +642,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await query.message.reply_text(restart_complete, parse_mode=ParseMode.MARKDOWN)
         
         # Pokaż menu główne
-        from handlers.menu_handler import show_main_menu
+        from handlers.start_handler import start_command
         
         # Utwórz sztuczny obiekt update do wyświetlenia menu
         class FakeUpdate:
@@ -565,11 +664,11 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         
         fake_message = FakeUpdate.FakeMessage(query.message.chat_id, query.message.message_id)
         fake_update = FakeUpdate(fake_message, query.from_user)
-        await show_main_menu(fake_update, context)
+        await start_command(fake_update, context)
         return
     
     # Obsługa historii rozmów
-    elif query.data == "history_confirm_delete":
+    if query.data == "history_confirm_delete":
         user_id = query.from_user.id
         # Twórz nową konwersację (efektywnie "usuwając" historię)
         conversation = create_new_conversation(user_id)
@@ -583,15 +682,9 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
                 parse_mode=ParseMode.MARKDOWN
             )
         return
-
-async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Obsługa komendy /menu
-    Wyświetla menu główne bota
-    """
-    from handlers.menu_handler import show_main_menu
-    await show_main_menu(update, context)
-
+        
+    # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
+    print(f"Nieobsłużony callback: {query.data}")
 
 async def handle_model_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, model_id):
     """Obsługa wyboru modelu AI"""
@@ -771,9 +864,7 @@ def main():
     # Inicjalizacja aplikacji
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
-    application.add_handler(CommandHandler("removekeyboard", remove_keyboard))
-
-    # Dodanie handlerów komend
+    # Podstawowe komendy - USUNIĘTY handler removekeyboard
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("status", check_status))
     application.add_handler(CommandHandler("newchat", new_chat))
@@ -781,25 +872,22 @@ def main():
     application.add_handler(CommandHandler("mode", show_modes))
     application.add_handler(CommandHandler("image", generate_image))
     application.add_handler(CommandHandler("restart", restart_command))
-    application.add_handler(CommandHandler("menu", menu_command))  # Nowa obsługa menu
+    application.add_handler(CommandHandler("menu", menu_command))
     application.add_handler(CommandHandler("setname", set_user_name))
     
-    # Dodanie handlerów kodów aktywacyjnych
+    # Handlery kodów aktywacyjnych
     application.add_handler(CommandHandler("code", code_command))
     application.add_handler(CommandHandler("gencode", admin_generate_code))
     
-    # Dodanie handlerów kredytów
+    # Handlery kredytów
     application.add_handler(CommandHandler("credits", credits_command))
     application.add_handler(CommandHandler("buy", buy_command))
     application.add_handler(CommandHandler("creditstats", credit_stats_command))
+    application.add_handler(CommandHandler("creditanalysis", credit_analytics_command))
     
-    # Dodanie handlerów komend administracyjnych
+    # Komendy administracyjne
     application.add_handler(CommandHandler("addcredits", add_credits_admin))
     application.add_handler(CommandHandler("userinfo", get_user_info))
-    
-    # Dodanie handlerów dokumentów i zdjęć
-    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     
     # Handler eksportu
     application.add_handler(CommandHandler("export", export_conversation))
@@ -808,10 +896,14 @@ def main():
     application.add_handler(CommandHandler("theme", theme_command))
     application.add_handler(CommandHandler("notheme", notheme_command))
     
-    # Dodanie handlera zapytań zwrotnych (z przycisków)
+    # WAŻNE: Handler callbacków (musi być przed handlerami mediów i tekstu)
     application.add_handler(CallbackQueryHandler(handle_callback_query))
     
-    # Dodanie handlera wiadomości tekstowych (musi być na końcu)
+    # Handlery mediów (dokumenty, zdjęcia)
+    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+    
+    # Handler wiadomości tekstowych (zawsze na końcu)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
     
     # Uruchomienie bota
