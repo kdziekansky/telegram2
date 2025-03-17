@@ -83,56 +83,17 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             language_code=user.language_code
         )
         
-        # Sprawdź, czy użytkownik ma już wybrany język
-        language = get_user_language(context, user.id)
+        # Zawsze pokazuj wybór języka przy starcie
+        await show_language_selection(update, context)
         
-        # Jeśli użytkownik nie ma jeszcze wybranego języka, pokaż wybór języka
-        if not language or language not in AVAILABLE_LANGUAGES:
-            await show_language_selection(update, context)
-            return
-        
-        # Link do zdjęcia bannera
-        banner_url = "https://i.imgur.com/JWQEzRc.jpg"
-        
-        # Pobierz przetłumaczony tekst powitalny
-        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
-        
-        # Utwórz klawiaturę menu
-        keyboard = [
-            [
-                InlineKeyboardButton("🔄 " + get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
-                InlineKeyboardButton("🖼️ " + get_text("image_generate", language), callback_data="menu_image_generate")
-            ],
-            [
-                InlineKeyboardButton("💰 " + get_text("menu_credits", language), callback_data="menu_section_credits"),
-                InlineKeyboardButton("📂 " + get_text("menu_dialog_history", language), callback_data="menu_section_history")
-            ],
-            [
-                InlineKeyboardButton("⚙️ " + get_text("menu_settings", language), callback_data="menu_section_settings"),
-                InlineKeyboardButton("❓ " + get_text("menu_help", language), callback_data="menu_help")
-            ]
-        ]
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        # Wyślij zdjęcie z URL z podpisem i menu
-        message = await update.message.reply_photo(
-            photo=banner_url,
-            caption=welcome_text,
-            reply_markup=reply_markup
-        )
-        
-        # Zapisz ID wiadomości menu i stan menu
-        from handlers.menu_handler import store_menu_state
-        store_menu_state(context, user.id, 'main', message.message_id)
-    
     except Exception as e:
         print(f"Błąd w funkcji start_command: {e}")
         import traceback
         traceback.print_exc()
         
+        language = "pl"  # Domyślny język w przypadku błędu
         await update.message.reply_text(
-            "Wystąpił błąd podczas inicjalizacji bota. Spróbuj ponownie później."
+            get_text("initialization_error", language, default="Wystąpił błąd podczas inicjalizacji bota. Spróbuj ponownie później.")
         )
 
 async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -158,7 +119,7 @@ async def show_language_selection(update: Update, context: ContextTypes.DEFAULT_
         banner_url = "https://i.imgur.com/8zdLrE5.png"
         
         # Użyj neutralnego języka dla pierwszej wiadomości
-        language_message = f"🌐 Wybierz język / Choose language / Выберите язык:"
+        language_message = f"Wybierz język / Choose language / Выберите язык:"
         
         # Wyślij zdjęcie z tekstem wyboru języka
         await update.message.reply_photo(
@@ -211,7 +172,7 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
         context.chat_data['user_data'][user_id]['language'] = language
         
         # Link do zdjęcia bannera
-        banner_url = "https://i.imgur.com/JWQEzRc.jpg"  # Ten sam obraz co w start_command
+        banner_url = "https://i.imgur.com/OiPImmC.png"  # Ten sam obraz co w start_command
         
         # Pobierz przetłumaczony tekst powitalny
         welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
@@ -219,16 +180,16 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
         # Utwórz klawiaturę menu
         keyboard = [
             [
-                InlineKeyboardButton("🔄 " + get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
-                InlineKeyboardButton("🖼️ " + get_text("image_generate", language), callback_data="menu_image_generate")
+                InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
+                InlineKeyboardButton(et_text("image_generate", language), callback_data="menu_image_generate")
             ],
             [
-                InlineKeyboardButton("💰 " + get_text("menu_credits", language), callback_data="menu_section_credits"),
-                InlineKeyboardButton("📂 " + get_text("menu_dialog_history", language), callback_data="menu_section_history")
+                InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
+                InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
             ],
             [
-                InlineKeyboardButton("⚙️ " + get_text("menu_settings", language), callback_data="menu_section_settings"),
-                InlineKeyboardButton("❓ " + get_text("menu_help", language), callback_data="menu_help")
+                InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
+                InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
             ]
         ]
         
@@ -292,7 +253,7 @@ async def show_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYP
         credits = get_user_credits(user_id)
         
         # Link do zdjęcia bannera
-        banner_url = "https://i.imgur.com/JWQEzRc.jpg"
+        banner_url = "https://i.imgur.com/YPubLDE.png"
         
         # Pobierz przetłumaczony tekst powitalny
         welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
@@ -300,16 +261,16 @@ async def show_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYP
         # Utwórz klawiaturę menu
         keyboard = [
             [
-                InlineKeyboardButton("🔄 " + get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
-                InlineKeyboardButton("🖼️ " + get_text("image_generate", language), callback_data="menu_image_generate")
+                InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
+                InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
             ],
             [
-                InlineKeyboardButton("💰 " + get_text("menu_credits", language), callback_data="menu_section_credits"),
-                InlineKeyboardButton("📂 " + get_text("menu_dialog_history", language), callback_data="menu_section_history")
+                InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
+                InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
             ],
             [
-                InlineKeyboardButton("⚙️ " + get_text("menu_settings", language), callback_data="menu_section_settings"),
-                InlineKeyboardButton("❓ " + get_text("menu_help", language), callback_data="menu_help")
+                InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
+                InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
             ]
         ]
         

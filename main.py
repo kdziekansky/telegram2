@@ -83,71 +83,41 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Obsługa komendy /restart
     Resetuje kontekst bota, pokazuje informacje o bocie i aktualnych ustawieniach użytkownika
     """
-    user_id = update.effective_user.id
-    
-    # Resetowanie konwersacji - tworzymy nową konwersację i czyścimy kontekst
-    conversation = create_new_conversation(user_id)
-    
-    # Zachowujemy wybrane ustawienia użytkownika (język, model)
-    user_data = {}
-    if 'user_data' in context.chat_data and user_id in context.chat_data['user_data']:
-        # Pobieramy tylko podstawowe ustawienia, reszta jest resetowana
-        old_user_data = context.chat_data['user_data'][user_id]
-        if 'language' in old_user_data:
-            user_data['language'] = old_user_data['language']
-        if 'current_model' in old_user_data:
-            user_data['current_model'] = old_user_data['current_model']
-        if 'current_mode' in old_user_data:
-            user_data['current_mode'] = old_user_data['current_mode']
-    
-    # Resetujemy dane użytkownika w kontekście i ustawiamy tylko zachowane ustawienia
-    if 'user_data' not in context.chat_data:
-        context.chat_data['user_data'] = {}
-    context.chat_data['user_data'][user_id] = user_data
-    
-    # Sprawdź, czy użytkownik ma już wybrany język
-    language = get_user_language(context, user_id)
-    
-    # Jeśli użytkownik nie ma jeszcze wybranego języka, pokaż wybór języka
-    if not language or language not in AVAILABLE_LANGUAGES:
-        from handlers.start_handler import show_language_selection
+    try:
+        user_id = update.effective_user.id
+        
+        # Resetowanie konwersacji - tworzymy nową konwersację i czyścimy kontekst
+        conversation = create_new_conversation(user_id)
+        
+        # Zachowujemy wybrane ustawienia użytkownika (język, model)
+        user_data = {}
+        if 'user_data' in context.chat_data and user_id in context.chat_data['user_data']:
+            # Pobieramy tylko podstawowe ustawienia, reszta jest resetowana
+            old_user_data = context.chat_data['user_data'][user_id]
+            if 'language' in old_user_data:
+                user_data['language'] = old_user_data['language']
+            if 'current_model' in old_user_data:
+                user_data['current_model'] = old_user_data['current_model']
+            if 'current_mode' in old_user_data:
+                user_data['current_mode'] = old_user_data['current_mode']
+        
+        # Resetujemy dane użytkownika w kontekście i ustawiamy tylko zachowane ustawienia
+        if 'user_data' not in context.chat_data:
+            context.chat_data['user_data'] = {}
+        context.chat_data['user_data'][user_id] = user_data
+        
+        # Zawsze pokazuj wybór języka przy restarcie
         await show_language_selection(update, context)
-        return
-    
-    # Link do zdjęcia bannera
-    banner_url = "https://i.imgur.com/JWQEzRc.jpg"
-    
-    # Pobierz przetłumaczony tekst powitalny
-    welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
-    
-    # Utwórz klawiaturę menu
-    keyboard = [
-        [
-            InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
-            InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
-        ],
-        [
-            InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
-            InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
-        ],
-        [
-            InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
-            InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
-        ]
-    ]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    # Wyślij zdjęcie z URL z podpisem i menu
-    message = await update.message.reply_photo(
-        photo=banner_url,
-        caption=welcome_text,
-        reply_markup=reply_markup
-    )
-    
-    # Zapisz ID wiadomości menu i stan menu
-    from handlers.menu_handler import store_menu_state
-    store_menu_state(context, user.id, 'main', message.message_id)
+        
+    except Exception as e:
+        print(f"Błąd w funkcji restart_command: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        language = "pl"  # Domyślny język w przypadku błędu
+        await update.message.reply_text(
+            get_text("restart_error", language, default="Wystąpił błąd podczas restartu bota. Spróbuj ponownie później.")
+        )
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Obsługa komendy /menu - wyświetla menu główne bota z przyciskami inline"""

@@ -4,6 +4,56 @@
 # Słownik z tłumaczeniami dla każdego obsługiwanego języka
 translations = {
     "pl": {
+        # Ogólne błędy
+        "error": "Wystąpił błąd",
+        "restart_error": "Wystąpił błąd podczas restartu bota. Spróbuj ponownie później.",
+        "initialization_error": "Wystąpił błąd podczas inicjalizacji bota. Spróbuj ponownie później.",
+        "database_error": "Wystąpił błąd bazy danych. Spróbuj ponownie później.",
+        "conversation_error": "Wystąpił błąd przy pobieraniu konwersacji. Spróbuj /newchat aby utworzyć nową.",
+        "response_error": "Wystąpił błąd podczas generowania odpowiedzi: {error}",
+        
+        # Teksty do start i restart
+        "language_selection_neutral": "🌐 Wybierz język / Choose language / Выберите язык:",
+        
+        # Status konta
+        "your_account": "twojego konta w {bot_name}",
+        "available_credits": "Dostępne kredyty",
+        "operation_costs": "Koszty operacji",
+        "standard_message": "Standardowa wiadomość",
+        "premium_message": "Wiadomość Premium",
+        "expert_message": "Wiadomość Ekspercka",
+        "dalle_image": "Obraz DALL-E",
+        "document_analysis": "Analiza dokumentu",
+        "photo_analysis": "Analiza zdjęcia",
+        "credit": "kredyt",
+        "credits_per_message": "kredyt(ów) za wiadomość",
+        "messages_info": "Informacje o wiadomościach",
+        "messages_used": "Wykorzystane wiadomości",
+        "messages_limit": "Limit wiadomości",
+        "messages_left": "Pozostałe wiadomości",
+        "buy_more_credits": "Aby dokupić więcej kredytów, użyj komendy",
+        "no_mode": "brak",
+        
+        # Do funkcji credits
+        "user_credits": "Twoje kredyty",
+        "credit_packages": "Pakiety kredytów",
+        "buy_package": "Kup pakiet",
+        "purchase_success": "Zakup zakończony pomyślnie!",
+        "purchase_error": "Wystąpił błąd podczas zakupu.",
+        
+        # Do funkcji image
+        "image_description": "Opis obrazu",
+        "generating_image": "Generuję obraz, proszę czekać...",
+        "image_generation_error": "Wystąpił błąd podczas generowania obrazu. Spróbuj ponownie z innym opisem.",
+        
+        # Do funkcji file i photo
+        "file_too_large": "Plik jest zbyt duży. Maksymalny rozmiar to 25MB.",
+        "analyzing_file": "Analizuję plik, proszę czekać...",
+        "analyzing_photo": "Analizuję zdjęcie, proszę czekać...",
+        "file_analysis": "Analiza pliku",
+        "photo_analysis": "Analiza zdjęcia",
+        
+        # Istniejące klucze
         "menu": "Menu",
         "back": "Powrót",
         "status": "Status",
@@ -32,13 +82,11 @@ translations = {
         "model_selected_short": "Model został zmieniony",
         "language_selected_short": "Język został zmieniony",
         "purchase_complete": "Zakup zakończony pomyślnie!",
-        "purchase_error": "Wystąpił błąd podczas zakupu kredytów. Spróbuj ponownie lub wybierz inny pakiet.",
         "purchase_error_short": "Błąd zakupu",
         "refresh": "Odśwież",
         "new_chat_created": "Utworzono nową rozmowę",
         "new_chat_success": "✅ Utworzono nową rozmowę. Możesz teraz zadać pytanie.",
         "new_chat_error": "Wystąpił błąd podczas tworzenia nowej rozmowy.",
-        "error": "Wystąpił błąd",
         "yes": "Tak",
         "no": "Nie",
         "history_delete_confirm": "Czy na pewno chcesz usunąć historię rozmów?",
@@ -57,7 +105,8 @@ translations = {
         "menu_hidden": "Menu zostało ukryte",
         "detailed_explanation_requested": "Poproszono o szczegółowe wyjaśnienie",
         "translation_requested": "Poproszono o tłumaczenie",
-        "welcome_message": "Co może robić ten bot?\n❤️ ChatGPT, GPT-4o, DALLE-3 i więcej dla Ciebie\n\nWpisz /onboarding aby poznać wszystkie funkcje\n\nWsparcie: @mypremiumsupport_bot",        "subscription_expired": "Nie masz wystarczającej liczby kredytów, aby wykonać tę operację. \n\nKup kredyty za pomocą komendy /buy lub sprawdź swoje saldo za pomocą komendy /credits.",
+        "welcome_message": "Co może robić ten bot?\n❤️ ChatGPT, GPT-4o, DALLE-3 i więcej dla Ciebie\n\nWpisz /onboarding aby poznać wszystkie funkcje\n\nWsparcie: @mypremiumsupport_bot",
+        "subscription_expired": "Nie masz wystarczającej liczby kredytów, aby wykonać tę operację. \n\nKup kredyty za pomocą komendy /buy lub sprawdź swoje saldo za pomocą komendy /credits.",
         "credits_info": "💰 *Twoje kredyty w {bot_name}* 💰\n\nAktualny stan: *{credits}* kredytów\n\nKoszt operacji:\n• Standardowa wiadomość (GPT-3.5): 1 kredyt\n• Wiadomość Premium (GPT-4o): 3 kredyty\n• Wiadomość Ekspercka (GPT-4): 5 kredytów\n• Obraz DALL-E: 10-15 kredytów\n• Analiza dokumentu: 5 kredytów\n• Analiza zdjęcia: 8 kredytów\n\nUżyj komendy /buy aby kupić więcej kredytów.",
         "buy_credits": "🛒 *Kup kredyty* 🛒\n\nWybierz pakiet kredytów:\n\n{packages}\n\nAby kupić, użyj komendy:\n/buy [numer_pakietu]\n\nNa przykład, aby kupić pakiet Standard:\n/buy 2",
         "credit_purchase_success": "✅ *Zakup zakończony pomyślnie!*\n\nKupiłeś pakiet *{package_name}*\nDodano *{credits}* kredytów do Twojego konta\nKoszt: *{price} zł*\n\nObecny stan kredytów: *{total_credits}*\n\nDziękujemy za zakup! 🎉",
@@ -110,23 +159,67 @@ translations = {
         "generating_response": "⏳ Generowanie odpowiedzi...",
         "analyzing_document": "Analizuję plik, proszę czekać...",
         "analyzing_photo": "Analizuję zdjęcie, proszę czekać...",
-        "generating_image": "Generuję obraz, proszę czekać...",
-        
-        # Klucze dla obsługi języka i restartu
         "restart_suggestion": "Aby zastosować nowy język do wszystkich elementów bota, użyj przycisku poniżej.",
         "restart_button": "🔄 Zrestartuj bota",
         "restarting_bot": "Restartuję bota z nowym językiem...",
         "language_restart_complete": "✅ Bot został zrestartowany! Wszystkie elementy interfejsu są teraz w języku: *{language_display}*",
-        
-        # Klucze dla obrazów
         "image_usage": "Użycie: /image [opis obrazu]",
         "generated_image": "Wygenerowany obraz:",
         "cost": "Koszt",
-        "image_generation_error": "Przepraszam, wystąpił błąd podczas generowania obrazu. Spróbuj ponownie z innym opisem.",
         "low_credits_warning": "Uwaga:",
         "low_credits_message": "Pozostało Ci tylko *{credits}* kredytów. Kup więcej za pomocą komendy /buy."
     },
     "en": {
+        # Ogólne błędy
+        "error": "An error occurred",
+        "restart_error": "An error occurred while restarting the bot. Please try again later.",
+        "initialization_error": "An error occurred during bot initialization. Please try again later.",
+        "database_error": "A database error occurred. Please try again later.",
+        "conversation_error": "An error occurred while retrieving the conversation. Try /newchat to create a new one.",
+        "response_error": "An error occurred while generating the response: {error}",
+        
+        # Teksty do start i restart
+        "language_selection_neutral": "🌐 Choose language / Wybierz język / Выберите язык:",
+    
+        # Status konta
+        "your_account": "your account in {bot_name}",
+        "available_credits": "Available credits",
+        "operation_costs": "Operation costs",
+        "standard_message": "Standard message",
+        "premium_message": "Premium message",
+        "expert_message": "Expert message",
+        "dalle_image": "DALL-E image",
+        "document_analysis": "Document analysis",
+        "photo_analysis": "Photo analysis",
+        "credit": "credit",
+        "credits_per_message": "credit(s) per message",
+        "messages_info": "Messages information",
+        "messages_used": "Used messages",
+        "messages_limit": "Messages limit",
+        "messages_left": "Messages left",
+        "buy_more_credits": "To buy more credits, use the command",
+        "no_mode": "none",
+        
+        # Do funkcji credits
+        "user_credits": "Your credits",
+        "credit_packages": "Credit packages",
+        "buy_package": "Buy package",
+        "purchase_success": "Purchase completed successfully!",
+        "purchase_error": "An error occurred during the purchase.",
+        
+        # Do funkcji image
+        "image_description": "Image description",
+        "generating_image": "Generating image, please wait...",
+        "image_generation_error": "An error occurred while generating the image. Please try again with a different description.",
+        
+        # Do funkcji file i photo
+        "file_too_large": "The file is too large. Maximum size is 25MB.",
+        "analyzing_file": "Analyzing file, please wait...",
+        "analyzing_photo": "Analyzing photo, please wait...",
+        "file_analysis": "File analysis",
+        "photo_analysis": "Photo analysis",
+        
+        # Istniejące klucze
         "menu": "Menu",
         "back": "Back",
         "status": "Status",
@@ -155,13 +248,11 @@ translations = {
         "model_selected_short": "Model has been changed",
         "language_selected_short": "Language has been changed",
         "purchase_complete": "Purchase completed successfully!",
-        "purchase_error": "An error occurred during the purchase. Please try again or select another package.",
         "purchase_error_short": "Purchase error",
         "refresh": "Refresh",
         "new_chat_created": "New chat created",
         "new_chat_success": "✅ New chat created. You can now ask a question.",
         "new_chat_error": "An error occurred while creating a new chat.",
-        "error": "An error occurred",
         "yes": "Yes",
         "no": "No",
         "history_delete_confirm": "Are you sure you want to delete the chat history?",
@@ -180,7 +271,8 @@ translations = {
         "menu_hidden": "Menu has been hidden",
         "detailed_explanation_requested": "Detailed explanation requested",
         "translation_requested": "Translation requested",
-        "welcome_message": "What can this bot do?\n❤️ ChatGPT, GPT-4o, DALLE-3 and more for you\n\nType /onboarding to learn all features\n\nSupport: @mypremiumsupport_bot",        "subscription_expired": "You don't have enough credits to perform this operation. \n\nBuy credits using the /buy command or check your balance using the /credits command.",
+        "welcome_message": "What can this bot do?\n❤️ ChatGPT, GPT-4o, DALLE-3 and more for you\n\nType /onboarding to learn all features\n\nSupport: @mypremiumsupport_bot",
+        "subscription_expired": "You don't have enough credits to perform this operation. \n\nBuy credits using the /buy command or check your balance using the /credits command.",
         "credits_info": "💰 *Your credits in {bot_name}* 💰\n\nCurrent balance: *{credits}* credits\n\nOperation costs:\n• Standard message (GPT-3.5): 1 credit\n• Premium message (GPT-4o): 3 credits\n• Expert message (GPT-4): 5 credits\n• DALL-E image: 10-15 credits\n• Document analysis: 5 credits\n• Photo analysis: 8 credits\n\nUse the /buy command to buy more credits.",
         "buy_credits": "🛒 *Buy credits* 🛒\n\nSelect a credit package:\n\n{packages}\n\nTo buy, use the command:\n/buy [package_number]\n\nFor example, to buy the Standard package:\n/buy 2",
         "credit_purchase_success": "✅ *Purchase completed successfully!*\n\nYou bought the *{package_name}* package\nAdded *{credits}* credits to your account\nCost: *{price} PLN*\n\nCurrent credit balance: *{total_credits}*\n\nThank you for your purchase! 🎉",
@@ -233,23 +325,67 @@ translations = {
         "generating_response": "⏳ Generating response...",
         "analyzing_document": "Analyzing file, please wait...",
         "analyzing_photo": "Analyzing photo, please wait...",
-        "generating_image": "Generating image, please wait...",
-        
-        # Klucze dla obsługi języka i restartu
         "restart_suggestion": "To apply the new language to all bot elements, use the button below.",
         "restart_button": "🔄 Restart bot",
         "restarting_bot": "Restarting the bot with new language...",
         "language_restart_complete": "✅ Bot has been restarted! All interface elements are now in: *{language_display}*",
-        
-        # Klucze dla obrazów
         "image_usage": "Usage: /image [image description]",
         "generated_image": "Generated image:",
         "cost": "Cost",
-        "image_generation_error": "Sorry, there was an error generating the image. Please try again with a different description.",
         "low_credits_warning": "Warning:",
         "low_credits_message": "You only have *{credits}* credits left. Buy more using the /buy command."
     },
     "ru": {
+        # Ogólne błędy
+        "error": "Произошла ошибка",
+        "restart_error": "Произошла ошибка при перезапуске бота. Пожалуйста, попробуйте позже.",
+        "initialization_error": "Произошла ошибка при инициализации бота. Пожалуйста, попробуйте позже.",
+        "database_error": "Произошла ошибка базы данных. Пожалуйста, попробуйте позже.",
+        "conversation_error": "Произошла ошибка при получении разговора. Попробуйте /newchat, чтобы создать новый.",
+        "response_error": "Произошла ошибка при создании ответа: {error}",
+        
+        # Teksty do start i restart
+        "language_selection_neutral": "🌐 Выберите язык / Choose language / Wybierz język:",
+        
+        # Status konta
+        "your_account": "вашего аккаунта в {bot_name}",
+        "available_credits": "Доступные кредиты",
+        "operation_costs": "Стоимость операций",
+        "standard_message": "Стандартное сообщение",
+        "premium_message": "Премиум сообщение",
+        "expert_message": "Экспертное сообщение",
+        "dalle_image": "Изображение DALL-E",
+        "document_analysis": "Анализ документа",
+        "photo_analysis": "Анализ фото",
+        "credit": "кредит",
+        "credits_per_message": "кредит(ов) за сообщение",
+        "messages_info": "Информация о сообщениях",
+        "messages_used": "Использованные сообщения",
+        "messages_limit": "Лимит сообщений",
+        "messages_left": "Оставшиеся сообщения",
+        "buy_more_credits": "Чтобы купить больше кредитов, используйте команду",
+        "no_mode": "нет",
+        
+        # Do funkcji credits
+        "user_credits": "Ваши кредиты",
+        "credit_packages": "Пакеты кредитов",
+        "buy_package": "Купить пакет",
+        "purchase_success": "Покупка успешно завершена!",
+        "purchase_error": "Произошла ошибка при покупке.",
+        
+        # Do funkcji image
+        "image_description": "Описание изображения",
+        "generating_image": "Генерирую изображение, пожалуйста, подождите...",
+        "image_generation_error": "Произошла ошибка при создании изображения. Пожалуйста, попробуйте с другим описанием.",
+        
+        # Do funkcji file i photo
+        "file_too_large": "Файл слишком большой. Максимальный размер 25MB.",
+        "analyzing_file": "Анализирую файл, пожалуйста, подождите...",
+        "analyzing_photo": "Анализирую фото, пожалуйста, подождите...",
+        "file_analysis": "Анализ файла",
+        "photo_analysis": "Анализ фото",
+        
+        # Istniejące klucze
         "menu": "Меню",
         "back": "Назад",
         "status": "Статус",
@@ -278,13 +414,11 @@ translations = {
         "model_selected_short": "Модель изменена",
         "language_selected_short": "Язык изменен",
         "purchase_complete": "Покупка успешно завершена!",
-        "purchase_error": "Произошла ошибка при покупке кредитов. Попробуйте снова или выберите другой пакет.",
         "purchase_error_short": "Ошибка покупки",
         "refresh": "Обновить",
         "new_chat_created": "Создан новый чат",
         "new_chat_success": "✅ Создан новый чат. Теперь вы можете задать вопрос.",
         "new_chat_error": "Произошла ошибка при создании нового чата.",
-        "error": "Произошла ошибка",
         "yes": "Да",
         "no": "Нет",
         "history_delete_confirm": "Вы уверены, что хотите удалить историю чата?",
@@ -303,7 +437,8 @@ translations = {
         "menu_hidden": "Меню скрыто",
         "detailed_explanation_requested": "Запрошено подробное объяснение",
         "translation_requested": "Запрошен перевод",
-        "welcome_message": "Что может делать этот бот?\n❤️ ChatGPT, GPT-4o, DALLE-3 и больше для вас\n\nВведите /onboarding чтобы узнать все функции\n\nПоддержка: @mypremiumsupport_bot",        "subscription_expired": "У вас недостаточно кредитов для выполнения этой операции. \n\nКупите кредиты с помощью команды /buy или проверьте свой баланс с помощью команды /credits.",
+        "welcome_message": "Что может делать этот бот?\n❤️ ChatGPT, GPT-4o, DALLE-3 и больше для вас\n\nВведите /onboarding чтобы узнать все функции\n\nПоддержка: @mypremiumsupport_bot",
+        "subscription_expired": "У вас недостаточно кредитов для выполнения этой операции. \n\nКупите кредиты с помощью команды /buy или проверьте свой баланс с помощью команды /credits.",
         "credits_info": "💰 *Ваши кредиты в {bot_name}* 💰\n\nТекущий баланс: *{credits}* кредитов\n\nСтоимость операций:\n• Стандартное сообщение (GPT-3.5): 1 кредит\n• Премиум сообщение (GPT-4o): 3 кредита\n• Экспертное сообщение (GPT-4): 5 кредитов\n• Изображение DALL-E: 10-15 кредитов\n• Анализ документа: 5 кредитов\n• Анализ фото: 8 кредитов\n\nИспользуйте команду /buy, чтобы купить больше кредитов.",
         "buy_credits": "🛒 *Купить кредиты* 🛒\n\nВыберите пакет кредитов:\n\n{packages}\n\nДля покупки используйте команду:\n/buy [номер_пакета]\n\nНапример, чтобы купить пакет Стандарт:\n/buy 2",
         "credit_purchase_success": "✅ *Покупка успешно завершена!*\n\nВы купили пакет *{package_name}*\nДобавлено *{credits}* кредитов на ваш счет\nСтоимость: *{price} PLN*\n\nТекущий баланс кредитов: *{total_credits}*\n\nСпасибо за покупку! 🎉",
@@ -356,19 +491,13 @@ translations = {
         "generating_response": "⏳ Генерация ответа...",
         "analyzing_document": "Анализирую файл, пожалуйста, подождите...",
         "analyzing_photo": "Анализирую фото, пожалуйста, подождите...",
-        "generating_image": "Генерирую изображение, пожалуйста, подождите...",
-        
-        # Klucze dla obsługi języka i restartu
         "restart_suggestion": "Чтобы применить новый язык ко всем элементам бота, используйте кнопку ниже.",
         "restart_button": "🔄 Перезапустить бота",
         "restarting_bot": "Перезапуск бота с новым языком...",
         "language_restart_complete": "✅ Бот был перезапущен! Все элементы интерфейса теперь на языке: *{language_display}*",
-        
-        # Klucze dla obrazów
         "image_usage": "Использование: /image [описание изображения]",
         "generated_image": "Сгенерированное изображение:",
         "cost": "Стоимость",
-        "image_generation_error": "Извините, произошла ошибка при генерации изображения. Пожалуйста, попробуйте снова с другим описанием.",
         "low_credits_warning": "Внимание:",
         "low_credits_message": "У вас осталось только *{credits}* кредитов. Купите больше с помощью команды /buy."
     }
