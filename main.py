@@ -50,7 +50,7 @@ from handlers.menu_handler import (
 
 # Import handlera start
 from handlers.start_handler import (
-    start_command, handle_language_selection
+    start_command, handle_language_selection, language_command
 )
 
 # Import handlera obrazów
@@ -874,6 +874,7 @@ def main():
     application.add_handler(CommandHandler("restart", restart_command))
     application.add_handler(CommandHandler("menu", menu_command))
     application.add_handler(CommandHandler("setname", set_user_name))
+    application.add_handler(CommandHandler("language", language_command))
     
     # Handlery kodów aktywacyjnych
     application.add_handler(CommandHandler("code", code_command))
