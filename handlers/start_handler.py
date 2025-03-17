@@ -130,11 +130,30 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if message_status["messages_left"] > 0:
         welcome_text += f"\nPozostało wiadomości: {message_status['messages_left']}"
     
-    await update.message.reply_text(welcome_text, parse_mode=ParseMode.MARKDOWN)
+    # ZAMIAST wysyłać osobną wiadomość i potem pokazywać menu, zrób to razem
+    # Pobierz dane potrzebne dla menu
+    current_mode = get_user_current_mode(context, user.id)
+    current_model = get_user_current_model(context, user.id)
     
-    # Pokaż menu główne
-    from handlers.menu_handler import show_main_menu
-    await show_main_menu(update, context)
+    # Przygotuj informacje o aktualnym trybie i modelu
+    mode_name = CHAT_MODES[current_mode]["name"] if current_mode in CHAT_MODES else "Standard"
+    model_name = AVAILABLE_MODELS[current_model] if current_model in AVAILABLE_MODELS else "GPT-3.5"
+    
+    # Utwórz klawiaturę menu
+    reply_markup = create_main_menu_markup(language)
+    
+    # Wyślij wiadomość powitalną z menu
+    message = await update.message.reply_text(
+        welcome_text, 
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=reply_markup
+    )
+    
+    # Zapisz ID wiadomości menu i stan menu
+    store_menu_state(context, user.id, 'main', message.message_id)
+    
+    # Usuń wywołanie show_main_menu, ponieważ menu jest już wyświetlane
+    # await show_main_menu(update, context)
 
 async def show_language_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
