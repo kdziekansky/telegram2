@@ -69,7 +69,7 @@ def get_user_language(context, user_id):
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Obsługa komendy /start
-    Wyświetla banner graficzny i wiadomość powitalną z menu
+    Wyświetla wybór języka lub banner graficzny i wiadomość powitalną z menu
     """
     try:
         user = update.effective_user
@@ -83,11 +83,16 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             language_code=user.language_code
         )
         
-        # Link do zdjęcia bannera
-        banner_url = "https://i.imgur.com/JWQEzRc.jpg"  # Użyj swojego URL do obrazu
-        
-        # Pobierz język użytkownika
+        # Sprawdź, czy użytkownik ma już wybrany język
         language = get_user_language(context, user.id)
+        
+        # Jeśli użytkownik nie ma jeszcze wybranego języka, pokaż wybór języka
+        if not language or language not in AVAILABLE_LANGUAGES:
+            await show_language_selection(update, context)
+            return
+        
+        # Link do zdjęcia bannera
+        banner_url = "https://i.imgur.com/JWQEzRc.jpg"
         
         # Pobierz przetłumaczony tekst powitalny
         welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
@@ -95,16 +100,16 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Utwórz klawiaturę menu
         keyboard = [
             [
-                InlineKeyboardButton("🔄 Tryb czatu", callback_data="menu_section_chat_modes"),
-                InlineKeyboardButton("🖼️ Generuj obraz", callback_data="menu_image_generate")
+                InlineKeyboardButton("🔄 " + get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
+                InlineKeyboardButton("🖼️ " + get_text("image_generate", language), callback_data="menu_image_generate")
             ],
             [
-                InlineKeyboardButton("💰 Kredyty", callback_data="menu_section_credits"),
-                InlineKeyboardButton("📂 Historia", callback_data="menu_section_history")
+                InlineKeyboardButton("💰 " + get_text("menu_credits", language), callback_data="menu_section_credits"),
+                InlineKeyboardButton("📂 " + get_text("menu_dialog_history", language), callback_data="menu_section_history")
             ],
             [
-                InlineKeyboardButton("⚙️ Ustawienia", callback_data="menu_section_settings"),
-                InlineKeyboardButton("❓ Pomoc", callback_data="menu_help")
+                InlineKeyboardButton("⚙️ " + get_text("menu_settings", language), callback_data="menu_section_settings"),
+                InlineKeyboardButton("❓ " + get_text("menu_help", language), callback_data="menu_help")
             ]
         ]
         
@@ -289,8 +294,8 @@ async def show_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYP
         # Link do zdjęcia bannera
         banner_url = "https://i.imgur.com/JWQEzRc.jpg"
         
-        # Utwórz wiadomość powitalną
-        welcome_text = f"Co może robić ten bot?\n\n❤️ ChatGPT, GPT-4o, Claude, DALL-E 3 – for you\n\nWebsite:\nhttps://jadve.com\n\nSupport: @techsupport_karflybot"
+        # Pobierz przetłumaczony tekst powitalny
+        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
         
         # Utwórz klawiaturę menu
         keyboard = [

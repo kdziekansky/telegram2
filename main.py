@@ -84,7 +84,6 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Resetuje kontekst bota, pokazuje informacje o bocie i aktualnych ustawieniach użytkownika
     """
     user_id = update.effective_user.id
-    language = get_user_language(context, user_id)
     
     # Resetowanie konwersacji - tworzymy nową konwersację i czyścimy kontekst
     conversation = create_new_conversation(user_id)
@@ -106,58 +105,49 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.chat_data['user_data'] = {}
     context.chat_data['user_data'][user_id] = user_data
     
-    # Sprawdzanie statusu kredytów
-    credits = get_user_credits(user_id)
+    # Sprawdź, czy użytkownik ma już wybrany język
+    language = get_user_language(context, user_id)
     
-    # Pobranie aktualnego trybu czatu
-    current_mode = "brak" 
-    current_mode_cost = 1
-    if 'current_mode' in user_data and user_data['current_mode'] in CHAT_MODES:
-        current_mode = CHAT_MODES[user_data['current_mode']]["name"]
-        current_mode_cost = CHAT_MODES[user_data['current_mode']]["credit_cost"]
+    # Jeśli użytkownik nie ma jeszcze wybranego języka, pokaż wybór języka
+    if not language or language not in AVAILABLE_LANGUAGES:
+        from handlers.start_handler import show_language_selection
+        await show_language_selection(update, context)
+        return
     
-    # Pobranie aktualnego modelu
-    current_model = DEFAULT_MODEL
-    if 'current_model' in user_data and user_data['current_model'] in AVAILABLE_MODELS:
-        current_model = AVAILABLE_MODELS[user_data['current_model']]
+    # Link do zdjęcia bannera
+    banner_url = "https://i.imgur.com/JWQEzRc.jpg"
     
-    # Pobierz nazwę aktualnego języka
-    language_name = AVAILABLE_LANGUAGES.get(language, language)
+    # Pobierz przetłumaczony tekst powitalny
+    welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
     
-    # Przygotowanie wiadomości
-    restart_text = f"""🔄 *{BOT_NAME} został zrestartowany*
-
-{get_text("help_text", language)}
-
-*Ustawienia*
-🔄 Wybierz tryb czatu: {current_mode} (kredyty: {current_mode_cost})
-🤖 Model AI: {current_model}
-🌐 Język: {language_name}
-💰 Saldo (Kredyty): {credits} kredyty
-
-✅ Bot został zrestartowany! Wszystkie elementy interfejsu są teraz w języku: {language_name}"""
-
     # Utwórz klawiaturę menu
     keyboard = [
         [
-            InlineKeyboardButton("🔄 Tryb czatu", callback_data="menu_section_chat_modes"),
-            InlineKeyboardButton("🖼️ Generuj obraz", callback_data="menu_image_generate")
+            InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
+            InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
         ],
         [
-            InlineKeyboardButton("💰 Kredyty", callback_data="menu_section_credits"),
-            InlineKeyboardButton("📂 Historia", callback_data="menu_section_history")
+            InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
+            InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
         ],
         [
-            InlineKeyboardButton("⚙️ Ustawienia", callback_data="menu_section_settings"),
-            InlineKeyboardButton("❓ Pomoc", callback_data="menu_help")
+            InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
+            InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
         ]
     ]
     
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await update.message.reply_text(restart_text, 
-                                   parse_mode=ParseMode.MARKDOWN,
-                                   reply_markup=reply_markup)
+    # Wyślij zdjęcie z URL z podpisem i menu
+    message = await update.message.reply_photo(
+        photo=banner_url,
+        caption=welcome_text,
+        reply_markup=reply_markup
+    )
+    
+    # Zapisz ID wiadomości menu i stan menu
+    from handlers.menu_handler import store_menu_state
+    store_menu_state(context, user.id, 'main', message.message_id)
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Obsługa komendy /menu - wyświetla menu główne bota z przyciskami inline"""
@@ -182,16 +172,16 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Utwórz klawiaturę menu
     keyboard = [
         [
-            InlineKeyboardButton("🔄 Tryb czatu", callback_data="menu_section_chat_modes"),
-            InlineKeyboardButton("🖼️ Generuj obraz", callback_data="menu_image_generate")
+            InlineKeyboardButton("Tryb czatu", callback_data="menu_section_chat_modes"),
+            InlineKeyboardButton("Generuj obraz", callback_data="menu_image_generate")
         ],
         [
-            InlineKeyboardButton("💰 Kredyty", callback_data="menu_section_credits"),
-            InlineKeyboardButton("📂 Historia", callback_data="menu_section_history")
+            InlineKeyboardButton("Kredyty", callback_data="menu_section_credits"),
+            InlineKeyboardButton("Historia", callback_data="menu_section_history")
         ],
         [
-            InlineKeyboardButton("⚙️ Ustawienia", callback_data="menu_section_settings"),
-            InlineKeyboardButton("❓ Pomoc", callback_data="menu_help")
+            InlineKeyboardButton("Ustawienia", callback_data="menu_section_settings"),
+            InlineKeyboardButton("Pomoc", callback_data="menu_help")
         ]
     ]
     
