@@ -168,32 +168,41 @@ async def analyze_document(file_content, file_name):
         print(f"Błąd analizy dokumentu: {e}")
         return f"Przepraszam, wystąpił błąd podczas analizy dokumentu: {str(e)}"
 
-async def analyze_image(image_content, image_name):
+async def analyze_image(image_content, image_name, mode="analyze"):
     """
     Analizuj obraz za pomocą OpenAI API
     
     Args:
         image_content (bytes): Zawartość obrazu
         image_name (str): Nazwa obrazu
+        mode (str): Tryb analizy: "analyze" (domyślnie) lub "translate"
     
     Returns:
-        str: Analiza obrazu
+        str: Analiza obrazu lub tłumaczenie tekstu
     """
     try:
         # Kodowanie obrazu do Base64
         base64_image = base64.b64encode(image_content).decode('utf-8')
         
+        # Przygotuj odpowiednie instrukcje bazując na trybie
+        if mode == "translate":
+            system_instruction = "Jesteś pomocnym asystentem, który tłumaczy tekst z obrazów na język polski. Skup się tylko na odczytaniu i przetłumaczeniu tekstu widocznego na obrazie."
+            user_instruction = "Odczytaj cały tekst widoczny na obrazie i przetłumacz go na język polski. Podaj tylko tłumaczenie, bez dodatkowych wyjaśnień."
+        else:  # tryb analyze
+            system_instruction = "Jesteś pomocnym asystentem, który analizuje obrazy. Twoje odpowiedzi powinny być szczegółowe, ale zwięzłe."
+            user_instruction = "Opisz ten obraz. Co widzisz? Podaj szczegółową, ale zwięzłą analizę zawartości obrazu."
+        
         messages = [
             {
                 "role": "system", 
-                "content": "Jesteś pomocnym asystentem, który analizuje obrazy."
+                "content": system_instruction
             },
             {
                 "role": "user",
                 "content": [
                     {
                         "type": "text",
-                        "text": "Opisz ten obraz. Co widzisz? Podaj szczegółową analizę."
+                        "text": user_instruction
                     },
                     {
                         "type": "image_url",
@@ -206,9 +215,9 @@ async def analyze_image(image_content, image_name):
         ]
         
         response = await client.chat.completions.create(
-            model="gpt-4-vision-preview",
+            model="gpt-4o",  # Używamy GPT-4o zamiast zdeprecjonowanego gpt-4-vision-preview
             messages=messages,
-            max_tokens=500
+            max_tokens=800  # Zwiększona liczba tokenów dla dłuższych tekstów
         )
         
         return response.choices[0].message.content

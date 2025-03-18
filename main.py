@@ -742,11 +742,21 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(get_text("subscription_expired", language))
         return
     
+    # Sprawdź, czy zdjęcie zostało przesłane z komendą tłumaczenia
+    caption = update.message.caption or ""
+    translate_mode = False
+    
+    if caption.lower().startswith("/translate") or caption.lower().startswith("przetłumacz"):
+        translate_mode = True
+    
     # Wybierz zdjęcie o najwyższej rozdzielczości
     photo = update.message.photo[-1]
     
     # Pobierz zdjęcie
-    message = await update.message.reply_text(get_text("analyzing_photo", language))
+    if translate_mode:
+        message = await update.message.reply_text("Tłumaczę tekst ze zdjęcia, proszę czekać...")
+    else:
+        message = await update.message.reply_text(get_text("analyzing_photo", language))
     
     # Wyślij informację o aktywności bota
     await update.message.chat.send_action(action=ChatAction.TYPING)
@@ -754,15 +764,77 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await context.bot.get_file(photo.file_id)
     file_bytes = await file.download_as_bytearray()
     
-    # Analizuj zdjęcie
-    analysis = await analyze_image(file_bytes, f"photo_{photo.file_unique_id}.jpg")
+    # Analizuj zdjęcie w odpowiednim trybie
+    if translate_mode:
+        result = await analyze_image(file_bytes, f"photo_{photo.file_unique_id}.jpg", mode="translate")
+        header = "*Tłumaczenie tekstu ze zdjęcia:*\n\n"
+    else:
+        result = await analyze_image(file_bytes, f"photo_{photo.file_unique_id}.jpg", mode="analyze")
+        header = "*Analiza zdjęcia:*\n\n"
     
     # Odejmij kredyty
-    deduct_user_credits(user_id, credit_cost, "Analiza zdjęcia")
+    description = "Tłumaczenie tekstu ze zdjęcia" if translate_mode else "Analiza zdjęcia"
+    deduct_user_credits(user_id, credit_cost, description)
     
-    # Wyślij analizę do użytkownika
+    # Wyślij analizę/tłumaczenie do użytkownika
     await message.edit_text(
-        f"*Analiza zdjęcia:*\n\n{analysis}",
+        f"{header}{result}",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+    # Dodaj klawiaturę z dodatkowymi opcjami
+    if not translate_mode:
+        keyboard = [[
+            InlineKeyboardButton("🔄 Przetłumacz tekst z tego zdjęcia", callback_data=f"translate_photo_{photo.file_id}")
+        ]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            await message.edit_reply_markup(reply_markup=reply_markup)
+        except Exception as e:
+            print(f"Błąd dodawania klawiatury: {e}")
+    
+    # Sprawdź aktualny stan kredytów
+    credits = get_user_credits(user_id)
+    if credits < 5:
+        await update.message.reply_text(
+            f"*Uwaga:* Pozostało Ci tylko *{credits}* kredytów. "
+            f"Kup więcej za pomocą komendy /buy.",
+            parse_mode=ParseMode.MARKDOWN
+        )
+
+async def handle_photo_translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Obsługa przesłanych zdjęć z poleceniem tłumaczenia tekstu"""
+    user_id = update.effective_user.id
+    language = get_user_language(context, user_id)
+    
+    # Sprawdź, czy użytkownik ma wystarczającą liczbę kredytów
+    credit_cost = CREDIT_COSTS["photo"]
+    if not check_user_credits(user_id, credit_cost):
+        await update.message.reply_text(get_text("subscription_expired", language))
+        return
+    
+    # Wybierz zdjęcie o najwyższej rozdzielczości
+    photo = update.message.photo[-1]
+    
+    # Pobierz zdjęcie
+    message = await update.message.reply_text("Tłumaczę tekst ze zdjęcia, proszę czekać...")
+    
+    # Wyślij informację o aktywności bota
+    await update.message.chat.send_action(action=ChatAction.TYPING)
+    
+    file = await context.bot.get_file(photo.file_id)
+    file_bytes = await file.download_as_bytearray()
+    
+    # Analizuj zdjęcie w trybie tłumaczenia
+    translation = await analyze_image(file_bytes, f"photo_{photo.file_unique_id}.jpg", mode="translate")
+    
+    # Odejmij kredyty
+    deduct_user_credits(user_id, credit_cost, "Tłumaczenie tekstu ze zdjęcia")
+    
+    # Wyślij tłumaczenie do użytkownika
+    await message.edit_text(
+        f"*Tłumaczenie tekstu ze zdjęcia:*\n\n{translation}",
         parse_mode=ParseMode.MARKDOWN
     )
     
@@ -774,8 +846,41 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"Kup więcej za pomocą komendy /buy.",
             parse_mode=ParseMode.MARKDOWN
         )
+        
+async def translate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Obsługa komendy /translate
+    Instruuje użytkownika jak korzystać z funkcji tłumaczenia
+    """
+    await update.message.reply_text(
+        "📸 *Tłumaczenie tekstu ze zdjęcia*\n\n"
+        "Aby przetłumaczyć tekst ze zdjęcia, możesz:\n"
+        "1. Przesłać zdjęcie z napisem '/translate' w podpisie\n"
+        "2. Przesłać zdjęcie, a następnie odpowiedzieć na nie komendą '/translate'\n"
+        "3. Kliknąć przycisk 'Przetłumacz tekst z tego zdjęcia' pod analizą zdjęcia\n\n"
+        "Tekst zostanie rozpoznany i przetłumaczony na język polski.",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    
+async def show_translation_instructions(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Wyświetla instrukcje dotyczące tłumaczenia tekstu ze zdjęć
+    """
+    await update.message.reply_text(
+        "📸 *Tłumaczenie tekstu ze zdjęć*\n\n"
+        "Masz kilka sposobów, aby przetłumaczyć tekst ze zdjęcia:\n\n"
+        "1️⃣ Wyślij zdjęcie, a następnie kliknij przycisk \"🔄 Przetłumacz tekst z tego zdjęcia\" pod analizą\n\n"
+        "2️⃣ Wyślij zdjęcie z podpisem \"/translate\" lub \"przetłumacz\"\n\n"
+        "3️⃣ Użyj komendy /translate a następnie wyślij zdjęcie\n\n"
+        "Bot rozpozna tekst na zdjęciu i przetłumaczy go na język polski. "
+        "Ta funkcja jest przydatna do tłumaczenia napisów, dokumentów, menu, znaków itp.",
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 # Handlers dla przycisków i callbacków
+
+# Zmiana w funkcji handle_callback_query
+# Znajdź tę funkcję w main.py i zastąp ją poniższą wersją:
 
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Obsługa zapytań zwrotnych (z przycisków)"""
@@ -808,10 +913,17 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             traceback.print_exc()
             # Wyślij informację o błędzie
             try:
-                await query.edit_message_text(
-                    f"Wystąpił błąd podczas obsługi menu: {str(e)}",
-                    parse_mode=ParseMode.MARKDOWN
-                )
+                # Sprawdź, czy wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+                if hasattr(query.message, 'caption'):
+                    await query.edit_message_caption(
+                        caption=f"Wystąpił błąd podczas obsługi menu: {str(e)}",
+                        parse_mode=ParseMode.MARKDOWN
+                    )
+                else:
+                    await query.edit_message_text(
+                        text=f"Wystąpił błąd podczas obsługi menu: {str(e)}",
+                        parse_mode=ParseMode.MARKDOWN
+                    )
             except:
                 pass
             return
@@ -840,6 +952,86 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_theme_callback(update, context)
         return
     
+    # Obsługa przycisku tłumaczenia zdjęcia
+    if query.data.startswith("translate_photo_"):
+        photo_file_id = query.data.replace("translate_photo_", "")
+        user_id = query.from_user.id
+        language = get_user_language(context, user_id)
+        
+        # Sprawdź, czy użytkownik ma wystarczającą liczbę kredytów
+        credit_cost = CREDIT_COSTS["photo"]
+        if not check_user_credits(user_id, credit_cost):
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("subscription_expired", language),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("subscription_expired", language),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            return
+        
+        # Pobierz zdjęcie
+        try:
+            if hasattr(query.message, 'caption'):
+                message = await query.edit_message_caption(
+                    caption="Tłumaczę tekst ze zdjęcia, proszę czekać...",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                message = await query.edit_message_text(
+                    text="Tłumaczę tekst ze zdjęcia, proszę czekać...",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            
+            file = await context.bot.get_file(photo_file_id)
+            file_bytes = await file.download_as_bytearray()
+            
+            # Tłumacz tekst ze zdjęcia
+            translation = await analyze_image(file_bytes, f"photo_{photo_file_id}.jpg", mode="translate")
+            
+            # Odejmij kredyty
+            deduct_user_credits(user_id, credit_cost, "Tłumaczenie tekstu ze zdjęcia")
+            
+            # Wyślij tłumaczenie
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=f"*Tłumaczenie tekstu ze zdjęcia:*\n\n{translation}",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=f"*Tłumaczenie tekstu ze zdjęcia:*\n\n{translation}",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            
+            # Sprawdź aktualny stan kredytów
+            credits = get_user_credits(user_id)
+            if credits < 5:
+                await context.bot.send_message(
+                    chat_id=query.message.chat_id,
+                    text=f"*Uwaga:* Pozostało Ci tylko *{credits}* kredytów. "
+                    f"Kup więcej za pomocą komendy /buy.",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            
+            return
+        except Exception as e:
+            print(f"Błąd przy tłumaczeniu zdjęcia: {e}")
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=f"Wystąpił błąd podczas tłumaczenia zdjęcia: {str(e)}",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=f"Wystąpił błąd podczas tłumaczenia zdjęcia: {str(e)}",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            return
+    
     # Obsługa kredytów
     if query.data.startswith("buy_") or query.data.startswith("credits_"):
         from handlers.credit_handler import handle_credit_callback
@@ -851,10 +1043,17 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         if query.data == "history_new":
             # Twórz nową konwersację
             conversation = create_new_conversation(user_id)
-            await query.edit_message_text(
-                get_text("new_chat_success", get_user_language(context, user_id)),
-                parse_mode=ParseMode.MARKDOWN
-            )
+            # Sprawdź, czy wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("new_chat_success", get_user_language(context, user_id)),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("new_chat_success", get_user_language(context, user_id)),
+                    parse_mode=ParseMode.MARKDOWN
+                )
             return
         elif query.data == "history_export":
             # Eksportuj bieżącą konwersację
@@ -878,10 +1077,16 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             fake_update = FakeUpdate(query)
             await export_conversation(fake_update, context)
             # Informacja o eksporcie
-            await query.edit_message_text(
-                "Eksportowanie konwersacji do PDF...",
-                parse_mode=ParseMode.MARKDOWN
-            )
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption="Eksportowanie konwersacji do PDF...",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text="Eksportowanie konwersacji do PDF...",
+                    parse_mode=ParseMode.MARKDOWN
+                )
             return
         elif query.data == "history_delete":
             # Pytanie o potwierdzenie usunięcia historii
@@ -892,11 +1097,18 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
                 ]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            await query.edit_message_text(
-                get_text("history_delete_confirm", get_user_language(context, user_id)),
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
-            )
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("history_delete_confirm", get_user_language(context, user_id)),
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("history_delete_confirm", get_user_language(context, user_id)),
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
             return
     
     # Obsługa przycisku restartu bota
@@ -907,7 +1119,10 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         
         restart_message = get_text("restarting_bot", language)
         try:
-            await query.edit_message_text(restart_message)
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(caption=restart_message)
+            else:
+                await query.edit_message_text(text=restart_message)
         except Exception as e:
             print(f"Błąd przy aktualizacji wiadomości: {e}")
         
@@ -987,19 +1202,31 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             from handlers.menu_handler import update_menu
             await update_menu(update, context, 'history')
         else:
-            await query.edit_message_text(
-                "Wystąpił błąd podczas czyszczenia historii.",
-                parse_mode=ParseMode.MARKDOWN
-            )
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption="Wystąpił błąd podczas czyszczenia historii.",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text="Wystąpił błąd podczas czyszczenia historii.",
+                    parse_mode=ParseMode.MARKDOWN
+                )
         return
         
     # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
     print(f"Nieobsłużony callback: {query.data}")
     try:
-        await query.edit_message_text(
-            f"Nieznany przycisk. Spróbuj ponownie później.",
-            parse_mode=ParseMode.MARKDOWN
-        )
+        if hasattr(query.message, 'caption'):
+            await query.edit_message_caption(
+                caption=f"Nieznany przycisk. Spróbuj ponownie później.",
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            await query.edit_message_text(
+                text=f"Nieznany przycisk. Spróbuj ponownie później.",
+                parse_mode=ParseMode.MARKDOWN
+            )
     except:
         pass
 
@@ -1011,7 +1238,17 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
     
     # Sprawdź, czy tryb istnieje
     if mode_id not in CHAT_MODES:
-        await query.edit_message_text(get_text("model_not_available", language))
+        # Sprawdź typ wiadomości i użyj odpowiedniej metody
+        if hasattr(query.message, 'caption'):
+            await query.edit_message_caption(
+                caption=get_text("model_not_available", language),
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            await query.edit_message_text(
+                text=get_text("model_not_available", language),
+                parse_mode=ParseMode.MARKDOWN
+            )
         return
     
     # Zapisz wybrany tryb w kontekście użytkownika
@@ -1037,15 +1274,25 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
     else:
         short_description = mode_description
     
-    await query.edit_message_text(
-        f"Wybrany tryb: *{mode_name}*\n"
-        f"Koszt: *{credit_cost}* kredyt(ów) za wiadomość\n\n"
-        f"Opis: _{short_description}_\n\n"
-        f"Możesz teraz zadać pytanie w wybranym trybie.",
-        parse_mode=ParseMode.MARKDOWN
-    )
+    message_text = f"Wybrany tryb: *{mode_name}*\n"\
+                   f"Koszt: *{credit_cost}* kredyt(ów) za wiadomość\n\n"\
+                   f"Opis: _{short_description}_\n\n"\
+                   f"Możesz teraz zadać pytanie w wybranym trybie."
+    
+    # Sprawdź typ wiadomości i użyj odpowiedniej metody
+    if hasattr(query.message, 'caption'):
+        await query.edit_message_caption(
+            caption=message_text,
+            parse_mode=ParseMode.MARKDOWN
+        )
+    else:
+        await query.edit_message_text(
+            text=message_text,
+            parse_mode=ParseMode.MARKDOWN
+        )
     
     # Utwórz nową konwersację dla wybranego trybu
+    from database.sqlite_client import create_new_conversation
     create_new_conversation(user_id)
 
 async def handle_model_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, model_id):
@@ -1056,7 +1303,17 @@ async def handle_model_selection(update: Update, context: ContextTypes.DEFAULT_T
     
     # Sprawdź, czy model istnieje
     if model_id not in AVAILABLE_MODELS:
-        await query.edit_message_text(get_text("model_not_available", language))
+        # Sprawdź typ wiadomości i użyj odpowiedniej metody
+        if hasattr(query.message, 'caption'):
+            await query.edit_message_caption(
+                caption=get_text("model_not_available", language),
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            await query.edit_message_text(
+                text=get_text("model_not_available", language),
+                parse_mode=ParseMode.MARKDOWN
+            )
         return
     
     # Zapisz wybrany model w kontekście użytkownika
@@ -1072,10 +1329,20 @@ async def handle_model_selection(update: Update, context: ContextTypes.DEFAULT_T
     credit_cost = CREDIT_COSTS["message"].get(model_id, CREDIT_COSTS["message"]["default"])
     
     model_name = AVAILABLE_MODELS[model_id]
-    await query.edit_message_text(
-        get_text("model_selected", language, model=model_name, credits=credit_cost), 
-        parse_mode=ParseMode.MARKDOWN
-    )
+    
+    message_text = get_text("model_selected", language, model=model_name, credits=credit_cost)
+    
+    # Sprawdź typ wiadomości i użyj odpowiedniej metody
+    if hasattr(query.message, 'caption'):
+        await query.edit_message_caption(
+            caption=message_text,
+            parse_mode=ParseMode.MARKDOWN
+        )
+    else:
+        await query.edit_message_text(
+            text=message_text,
+            parse_mode=ParseMode.MARKDOWN
+        )
 
 # Handlers dla komend administracyjnych
 
@@ -1195,6 +1462,9 @@ def main():
     application.add_handler(CommandHandler("menu", menu_command))
     application.add_handler(CommandHandler("setname", set_user_name))
     application.add_handler(CommandHandler("language", language_command))
+
+    # Handler dla komendy /translate
+    application.add_handler(CommandHandler("translate", translate_command))
     
     # Dodanie komendy onboarding
     application.add_handler(CommandHandler("onboarding", onboarding_command))

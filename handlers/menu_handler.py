@@ -247,11 +247,21 @@ async def update_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, menu_s
     
     # Aktualizuj wiadomość menu
     try:
-        await query.edit_message_text(
-            text=menu_text,
-            reply_markup=markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=menu_text,
+                reply_markup=markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=menu_text,
+                reply_markup=markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
     except Exception as e:
         print(f"Błąd przy aktualizacji menu: {e}")
     
@@ -287,10 +297,22 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         ])
         
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            get_text("select_chat_mode", language),
-            reply_markup=reply_markup
-        )
+        
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=get_text("select_chat_mode", language),
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=get_text("select_chat_mode", language),
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
         return True
         
     elif query.data == "menu_section_credits":
@@ -301,10 +323,23 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            f"{get_text('credits', language)}: {get_user_credits(user_id)}\n{get_text('credit_options', language)}",
-            reply_markup=reply_markup
-        )
+        message_text = f"{get_text('credits', language)}: {get_user_credits(user_id)}\n{get_text('credit_options', language)}"
+        
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
         return True
         
     elif query.data == "menu_image_generate":
@@ -313,10 +348,23 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            get_text("image_usage", language),
-            reply_markup=reply_markup
-        )
+        message_text = get_text("image_usage", language)
+        
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
         return True
         
     elif query.data == "menu_section_history":
@@ -328,10 +376,23 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            get_text("history_options", language),
-            reply_markup=reply_markup
-        )
+        message_text = get_text("history_options", language)
+        
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
         return True
         
     elif query.data == "menu_section_settings":
@@ -342,10 +403,23 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            get_text("settings_options", language),
-            reply_markup=reply_markup
-        )
+        message_text = get_text("settings_options", language)
+        
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
         return True
         
     elif query.data == "menu_help":
@@ -354,11 +428,23 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            get_text("help_text", language),
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
+        message_text = get_text("help_text", language)
+        
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
         return True
         
     elif query.data == "menu_back_main":
@@ -390,11 +476,23 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         mode_name = CHAT_MODES[current_mode]["name"] if current_mode in CHAT_MODES else "Standard"
         model_name = AVAILABLE_MODELS[current_model] if current_model in AVAILABLE_MODELS else "GPT-3.5"
         
-        await query.edit_message_text(
-            f"{get_text('main_menu', language)}\n\n{get_text('status', language)}:\n{get_text('credits', language)}: {credits}\n{get_text('current_mode', language)}: {mode_name}\n{get_text('current_model', language)}: {current_model}\n\n{get_text('select_option', language)}",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
+        message_text = f"{get_text('main_menu', language)}\n\n{get_text('status', language)}:\n{get_text('credits', language)}: {credits}\n{get_text('current_mode', language)}: {mode_name}\n{get_text('current_model', language)}: {current_model}\n\n{get_text('select_option', language)}"
+        
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
         return True
     
     # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
