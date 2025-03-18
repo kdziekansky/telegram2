@@ -265,6 +265,11 @@ translations = {
         "export_error": "Wystąpił błąd podczas generowania pliku PDF. Spróbuj ponownie później.",
         "export_file_caption": "📄 Historia konwersacji w formacie PDF",
 
+        # Polski (pl)
+        "translate_instruction": "📄 **Tłumaczenie tekstu**\n\nDostępne opcje:\n\n1️⃣ Prześlij zdjęcie z tekstem do tłumaczenia i dodaj /translate w opisie lub odpowiedz na zdjęcie komendą /translate\n\n2️⃣ Wyślij dokument i odpowiedz na niego komendą /translate\n\n3️⃣ Użyj komendy /translate [język_docelowy] [tekst]\nNa przykład: /translate en Witaj świecie!\n\nDostępne języki docelowe: en (angielski), pl (polski), ru (rosyjski), fr (francuski), de (niemiecki), es (hiszpański), it (włoski), zh (chiński)",
+        "translating_image": "Tłumaczę tekst ze zdjęcia, proszę czekać...",
+        "translating_text": "Tłumaczę tekst, proszę czekać...",
+        "translation_result": "Wynik tłumaczenia",
 
     },
     
@@ -531,6 +536,13 @@ translations = {
         "export_error": "An error occurred while generating the PDF file. Please try again later.",
         "export_file_caption": "📄 Conversation history in PDF format",
 
+        # Angielski (en)
+        "translate_instruction": "📄 **Text Translation**\n\nAvailable options:\n\n1️⃣ Send a photo with text to translate and add /translate in the caption or reply to the photo with the /translate command\n\n2️⃣ Send a document and reply to it with the /translate command\n\n3️⃣ Use the command /translate [target_language] [text]\nFor example: /translate pl Hello world!\n\nAvailable target languages: en (English), pl (Polish), ru (Russian), fr (French), de (German), es (Spanish), it (Italian), zh (Chinese)",
+        "translating_image": "Translating text from the image, please wait...",
+        "translating_text": "Translating text, please wait...",
+        "translation_result": "Translation result",
+
+
     },
     
     "ru": {
@@ -796,6 +808,13 @@ translations = {
         "export_empty": "История разговора пуста.",
         "export_error": "Произошла ошибка при создании файла PDF. Пожалуйста, повторите попытку позже.",
         "export_file_caption": "📄 История разговора в формате PDF"
+
+        # Rosyjski (ru)
+        "translate_instruction": "📄 **Перевод текста**\n\nДоступные опции:\n\n1️⃣ Отправьте фото с текстом для перевода и добавьте /translate в описание или ответьте на фото командой /translate\n\n2️⃣ Отправьте документ и ответьте на него командой /translate\n\n3️⃣ Используйте команду /translate [целевой_язык] [текст]\nНапример: /translate en Привет мир!\n\nДоступные целевые языки: en (английский), pl (польский), ru (русский), fr (французский), de (немецкий), es (испанский), it (итальянский), zh (китайский)",
+        "translating_image": "Перевожу текст с изображения, пожалуйста, подождите...",
+        "translating_text": "Перевожу текст, пожалуйста, подождите...",
+        "translation_result": "Результат перевода"
+
     }
 }
 

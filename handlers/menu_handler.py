@@ -318,12 +318,12 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     elif query.data == "menu_section_credits":
         # Menu kredytów
         keyboard = [
-            [InlineKeyboardButton(get_text("check_balance", language), callback_data="credits_check")],
-            [InlineKeyboardButton(get_text("buy_credits_btn", language), callback_data="credits_buy")],
+            [InlineKeyboardButton(get_text("check_balance", language), callback_data="menu_credits_check")],
+            [InlineKeyboardButton(get_text("buy_credits_btn", language), callback_data="menu_credits_buy")],
             [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        message_text = f"{get_text('credits', language)}: {get_user_credits(user_id)}\n{get_text('credit_options', language)}"
+        message_text = f"{get_text('credits_status', language, credits=get_user_credits(user_id))}\n\n{get_text('credit_options', language)}"
         
         try:
             # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)

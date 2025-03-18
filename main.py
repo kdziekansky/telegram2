@@ -5,6 +5,8 @@ import datetime
 import pytz
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram import ReplyKeyboardRemove
+from handlers.help_handler import help_command, check_status
+from handlers.translate_handler import translate_command
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, 
     CallbackQueryHandler, ContextTypes, filters
@@ -1692,6 +1694,15 @@ def main():
     application.add_handler(CommandHandler("restart", restart_command))
     application.add_handler(CommandHandler("setname", set_user_name))
     application.add_handler(CommandHandler("language", language_command))
+
+    # Handler dla help
+    application.add_handler(CommandHandler("help", help_command))
+    
+    # Handler dla translate
+    application.add_handler(CommandHandler("translate", translate_command))
+    
+    # Handler dla /status
+    application.add_handler(CommandHandler("status", check_status))
 
     # Handler dla komendy /translate
     application.add_handler(CommandHandler("translate", translate_command))

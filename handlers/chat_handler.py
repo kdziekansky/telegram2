@@ -1,13 +1,15 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode, ChatAction
-from config import DEFAULT_MODEL, SUBSCRIPTION_EXPIRED_MESSAGE, MAX_CONTEXT_MESSAGES, AVAILABLE_MODELS, CHAT_MODES
+from config import DEFAULT_MODEL, MAX_CONTEXT_MESSAGES, AVAILABLE_MODELS, CHAT_MODES
 from database.sqlite_client import (
     check_active_subscription, get_active_conversation, 
     save_message, get_conversation_history, check_message_limit,
     increment_messages_used, get_message_status
 )
 from utils.openai_client import chat_completion_stream, prepare_messages_from_history
+from utils.translations import get_text
+from handlers.menu_handler import get_user_language
 import asyncio
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -93,7 +95,6 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_status = get_message_status(user_id)
     if message_status["messages_left"] <= 5 and message_status["messages_left"] > 0:
         await update.message.reply_text(
-            get_text("low_credits_warning", language) + " " + 
-            get_text("low_credits_message", language, credits=message_status['messages_left']),
+            f"{get_text('low_credits_warning', language)} {get_text('low_credits_message', language, credits=message_status['messages_left'])}",
             parse_mode=ParseMode.MARKDOWN
         )

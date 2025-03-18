@@ -122,29 +122,51 @@ async def generate_image_dall_e(prompt):
         print(f"Błąd generowania obrazu: {e}")
         return None
 
-async def analyze_document(file_content, file_name):
+async def analyze_document(file_content, file_name, mode="analyze", target_language="en"):
     """
-    Analizuj dokument za pomocą OpenAI API
+    Analizuj lub tłumacz dokument za pomocą OpenAI API
     
     Args:
         file_content (bytes): Zawartość pliku
         file_name (str): Nazwa pliku
-    
+        mode (str): Tryb analizy: "analyze" (domyślnie) lub "translate"
+        target_language (str): Docelowy język tłumaczenia (dwuliterowy kod)
+        
     Returns:
-        str: Analiza dokumentu
+        str: Analiza dokumentu, tłumaczenie lub informacja o błędzie
     """
     try:
         # Określamy typ zawartości na podstawie rozszerzenia pliku
         file_extension = os.path.splitext(file_name)[1].lower()
         
+        # Przygotuj odpowiednie instrukcje w zależności od trybu
+        if mode == "translate":
+            language_names = {
+                "en": "angielski",
+                "pl": "polski",
+                "ru": "rosyjski",
+                "fr": "francuski",
+                "de": "niemiecki",
+                "es": "hiszpański",
+                "it": "włoski",
+                "zh": "chiński"
+            }
+            target_lang_name = language_names.get(target_language, target_language)
+            
+            system_instruction = f"Jesteś profesjonalnym tłumaczem. Twoim zadaniem jest przetłumaczenie tekstu z dokumentu na język {target_lang_name}. Zachowaj oryginalny format tekstu."
+            user_instruction = f"Przetłumacz tekst z pliku {file_name} na język {target_lang_name}. Zachowaj strukturę i formatowanie oryginału."
+        else:  # tryb analyze
+            system_instruction = "Jesteś pomocnym asystentem, który analizuje dokumenty i pliki."
+            user_instruction = f"Przeanalizuj plik {file_name} i opisz jego zawartość. Podaj kluczowe informacje i wnioski."
+        
         messages = [
             {
                 "role": "system", 
-                "content": "Jesteś pomocnym asystentem, który analizuje dokumenty i pliki."
+                "content": system_instruction
             },
             {
                 "role": "user",
-                "content": f"Przeanalizuj plik {file_name} i opisz jego zawartość. Podaj kluczowe informacje i wnioski."
+                "content": user_instruction
             }
         ]
         
@@ -159,8 +181,9 @@ async def analyze_document(file_content, file_name):
                 messages[1]["content"] += "\n\nPlik zawiera dane binarne, które nie mogą być wyświetlone jako tekst."
         
         response = await client.chat.completions.create(
-            model=DEFAULT_MODEL,
-            messages=messages
+            model="gpt-4o",  # Użyjemy GPT-4o dla lepszej jakości
+            messages=messages,
+            max_tokens=1500  # Zwiększamy limit tokenów dla dłuższych tekstów
         )
         
         return response.choices[0].message.content
@@ -224,7 +247,7 @@ async def analyze_document(file_content, file_name, mode="analyze"):
         print(f"Błąd analizy dokumentu: {e}")
         return f"Przepraszam, wystąpił błąd podczas analizy dokumentu: {str(e)}"
 
-async def analyze_image(image_content, image_name, mode="analyze"):
+async def analyze_image(image_content, image_name, mode="analyze", target_language="en"):
     """
     Analizuj obraz za pomocą OpenAI API
     
@@ -232,7 +255,8 @@ async def analyze_image(image_content, image_name, mode="analyze"):
         image_content (bytes): Zawartość obrazu
         image_name (str): Nazwa obrazu
         mode (str): Tryb analizy: "analyze" (domyślnie) lub "translate"
-    
+        target_language (str): Docelowy język tłumaczenia (dwuliterowy kod)
+        
     Returns:
         str: Analiza obrazu lub tłumaczenie tekstu
     """
@@ -242,8 +266,20 @@ async def analyze_image(image_content, image_name, mode="analyze"):
         
         # Przygotuj odpowiednie instrukcje bazując na trybie
         if mode == "translate":
-            system_instruction = "Jesteś pomocnym asystentem, który tłumaczy tekst z obrazów na język polski. Skup się tylko na odczytaniu i przetłumaczeniu tekstu widocznego na obrazie."
-            user_instruction = "Odczytaj cały tekst widoczny na obrazie i przetłumacz go na język polski. Podaj tylko tłumaczenie, bez dodatkowych wyjaśnień."
+            language_names = {
+                "en": "angielski",
+                "pl": "polski",
+                "ru": "rosyjski",
+                "fr": "francuski",
+                "de": "niemiecki",
+                "es": "hiszpański",
+                "it": "włoski",
+                "zh": "chiński"
+            }
+            target_lang_name = language_names.get(target_language, target_language)
+            
+            system_instruction = f"Jesteś pomocnym asystentem, który tłumaczy tekst z obrazów na język {target_lang_name}. Skup się tylko na odczytaniu i przetłumaczeniu tekstu widocznego na obrazie."
+            user_instruction = f"Odczytaj cały tekst widoczny na obrazie i przetłumacz go na język {target_lang_name}. Podaj tylko tłumaczenie, bez dodatkowych wyjaśnień."
         else:  # tryb analyze
             system_instruction = "Jesteś pomocnym asystentem, który analizuje obrazy. Twoje odpowiedzi powinny być szczegółowe, ale zwięzłe."
             user_instruction = "Opisz ten obraz. Co widzisz? Podaj szczegółową, ale zwięzłą analizę zawartości obrazu."

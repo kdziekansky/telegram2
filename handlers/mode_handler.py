@@ -55,12 +55,12 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
         try:
             if hasattr(query.message, 'caption'):
                 await query.edit_message_caption(
-                    caption=get_text("model_not_available", language),
+                    caption=get_text("mode_not_available", language, default="Wybrany tryb nie jest dostępny."),
                     parse_mode=ParseMode.MARKDOWN
                 )
             else:
                 await query.edit_message_text(
-                    text=get_text("model_not_available", language),
+                    text=get_text("mode_not_available", language, default="Wybrany tryb nie jest dostępny."),
                     parse_mode=ParseMode.MARKDOWN
                 )
         except Exception as e:
@@ -97,33 +97,40 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
                           credit_cost=credit_cost,
                           description=short_description)
     
-    # Jeśli tłumaczenie nie istnieje, użyj zbudowanego tekstu z przetłumaczonych fragmentów
-    if message_text == "mode_selected_message":
-        message_text = f"{get_text('selected_mode', language, default='Wybrany tryb')}: *{mode_name}*\n"
-        message_text += f"{get_text('cost', language)}: *{credit_cost}* {get_text('credits_per_message', language)}\n\n"
-        message_text += f"{get_text('description', language, default='Opis')}: _{short_description}_\n\n"
-        message_text += f"{get_text('ask_question_now', language, default='Możesz teraz zadać pytanie w wybranym trybie.')}"
+    # Dodaj przyciski powrotu do menu trybów
+    keyboard = [
+        [InlineKeyboardButton(get_text("back", language), callback_data="menu_section_chat_modes")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     
     try:
         # Sprawdź typ wiadomości i użyj odpowiedniej metody
         if hasattr(query.message, 'caption'):
             await query.edit_message_caption(
                 caption=message_text,
-                parse_mode=ParseMode.MARKDOWN
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
             )
         else:
             await query.edit_message_text(
                 text=message_text,
-                parse_mode=ParseMode.MARKDOWN
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
             )
     except Exception as e:
         print(f"Błąd przy edycji wiadomości: {e}")
         try:
             # Bez formatowania Markdown
             if hasattr(query.message, 'caption'):
-                await query.edit_message_caption(caption=message_text)
+                await query.edit_message_caption(
+                    caption=message_text,
+                    reply_markup=reply_markup
+                )
             else:
-                await query.edit_message_text(text=message_text)
+                await query.edit_message_text(
+                    text=message_text,
+                    reply_markup=reply_markup
+                )
         except Exception as e2:
             print(f"Drugi błąd przy edycji wiadomości: {e2}")
         
