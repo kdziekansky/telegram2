@@ -209,15 +209,11 @@ async def update_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, menu_s
     
     # Utwórz tekst menu na podstawie stanu
     if menu_state == 'main':
-        menu_title = get_text("main_menu", language)
-        menu_text = f"""📋 *{menu_title}*
-
-*{get_text("status", language, default="Status")}:*
-💰 {get_text("credits", language)}: *{credits}*
-💬 {get_text("current_mode", language, default="Aktualny tryb")}: *{mode_name}*
-🤖 {get_text("current_model", language, default="Model")}: *{model_name}*
-
-{get_text("select_option", language, default="Wybierz opcję z menu poniżej:")}"""
+        # Używamy tutaj welcome_message zamiast main_menu
+        # Nieważne z jakiego stanu wracamy, zawsze używamy tekstu powitalnego
+        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
+        menu_text = welcome_text
+        
         if not markup:
             markup = create_main_menu_markup(language)
     elif menu_state == 'chat_modes':
@@ -233,15 +229,10 @@ async def update_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, menu_s
         menu_text = get_text("settings_options", language)
         # Tutaj możesz dodać własną logikę generowania menu dla ustawień
     else:
-        # Domyślne menu główne jeśli nie rozpoznano stanu
-        menu_text = f"""📋 *{get_text("main_menu", language)}*
-
-*{get_text("status", language, default="Status")}:*
-💰 {get_text("credits", language)}: *{credits}*
-💬 {get_text("current_mode", language, default="Aktualny tryb")}: *{mode_name}*
-🤖 {get_text("current_model", language, default="Model")}: *{model_name}*
-
-{get_text("select_option", language, default="Wybierz opcję z menu poniżej:")}"""
+        # Domyślnie też używamy welcome_message zamiast main_menu
+        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
+        menu_text = welcome_text
+        
         if not markup:
             markup = create_main_menu_markup(language)
     

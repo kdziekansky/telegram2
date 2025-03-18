@@ -192,14 +192,43 @@ async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAU
         context.chat_data['user_data'][user_id]['onboarding_state'] = prev_step
         step_name = steps[prev_step]
     elif query.data == "onboarding_finish":
-        # Usuń stan onboardingu i zakończ
+        # Usuń stan onboardingu i zakończ bez wysyłania nowej wiadomości
         if 'onboarding_state' in context.chat_data['user_data'][user_id]:
             del context.chat_data['user_data'][user_id]['onboarding_state']
         
-        await query.message.reply_text(
-            get_text("onboarding_finish", language, bot_name=BOT_NAME),
+        # Wyślij powitalną wiadomość zamiast próbować edytować obecną
+        banner_url = "https://i.imgur.com/OiPImmC.png"
+        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
+        
+        # Utwórz klawiaturę menu
+        keyboard = [
+            [
+                InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
+                InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
+            ],
+            [
+                InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
+                InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
+            ],
+            [
+                InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
+                InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
+            ]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Wyślij powitalną wiadomość
+        await context.bot.send_photo(
+            chat_id=query.message.chat_id,
+            photo=banner_url,
+            caption=welcome_text,
+            reply_markup=reply_markup,
             parse_mode=ParseMode.MARKDOWN
         )
+        
+        # Usuń poprzednią wiadomość
+        await query.message.delete()
         return
     else:
         # Nieznany callback
@@ -242,36 +271,27 @@ async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAU
     image_url = get_onboarding_image_url(step_name)
     
     try:
-        # Próbujemy zmienić podpis zdjęcia
-        await query.edit_message_caption(
+        # Usuń poprzednią wiadomość i wyślij nową z odpowiednim obrazem
+        await query.message.delete()
+        await context.bot.send_photo(
+            chat_id=query.message.chat_id,
+            photo=image_url,
             caption=text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.MARKDOWN
         )
     except Exception as e:
-        print(f"Błąd aktualizacji podpisu: {e}")
+        print(f"Błąd przy aktualizacji wiadomości onboardingu: {e}")
         try:
-            # Jeśli nie możemy zaktualizować podpisu, wyślij nowe zdjęcie
-            await query.delete_message()
-            await context.bot.send_photo(
-                chat_id=query.message.chat_id,
-                photo=image_url,
+            # Jeśli usunięcie i wysłanie nowej wiadomości się nie powiedzie, 
+            # próbujemy zaktualizować obecną
+            await query.edit_message_caption(
                 caption=text,
                 reply_markup=reply_markup,
                 parse_mode=ParseMode.MARKDOWN
             )
         except Exception as e2:
-            print(f"Błąd wysyłania nowej wiadomości: {e2}")
-            # Próbuj przynajmniej wysłać tekst
-            try:
-                await context.bot.send_message(
-                    chat_id=query.message.chat_id,
-                    text=text,
-                    reply_markup=reply_markup,
-                    parse_mode=ParseMode.MARKDOWN
-                )
-            except Exception as e3:
-                print(f"Nie udało się wysłać nawet tekstu: {e3}")
+            print(f"Nie udało się zaktualizować wiadomości: {e2}")
 
 # Handlers dla podstawowych komend
 
@@ -616,7 +636,8 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [[InlineKeyboardButton("🛒 " + get_text("buy_credits_btn", language, default="Kup kredyty"), callback_data="menu_credits_buy")]]
         
         await update.message.reply_text(
-            f"*{get_text('low_credits_warning', language)}* {get_text('low_credits_message', language, credits=credits)}",
+
+f"*{get_text('low_credits_warning', language)}* {get_text('low_credits_message', language, credits=credits)}",
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode=ParseMode.MARKDOWN
         )
@@ -852,9 +873,6 @@ async def show_translation_instructions(update: Update, context: ContextTypes.DE
 
 # Handlers dla przycisków i callbacków
 
-# Zmiana w funkcji handle_callback_query
-# Znajdź tę funkcję w main.py i zastąp ją poniższą wersją:
-
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Obsługa zapytań zwrotnych (z przycisków)"""
     query = update.callback_query
@@ -862,6 +880,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     # Dodaj debugowanie
     print(f"Otrzymano callback: {query.data}")
     user_id = query.from_user.id
+    language = get_user_language(context, user_id)
     
     # Zawsze odpowiadaj na callback, aby usunąć oczekiwanie
     await query.answer()
@@ -1248,6 +1267,8 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
                 parse_mode=ParseMode.MARKDOWN
             )
             
+            # Zapisz ID wiadomości
+
             # Zapisz ID wiadomości menu i stan menu
             from handlers.menu_handler import store_menu_state
             store_menu_state(context, user_id, 'main', message.message_id)
@@ -1285,6 +1306,45 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
                     parse_mode=ParseMode.MARKDOWN
                 )
         return
+    
+    # Obsługa przycisku powrotu do menu głównego
+    elif query.data == "menu_back_main":
+        # Powrót do głównego menu
+        keyboard = [
+            [
+                InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
+                InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
+            ],
+            [
+                InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
+                InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
+            ],
+            [
+                InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
+                InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Użycie welcome_message zamiast main_menu
+        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
+        
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=welcome_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=welcome_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        return True
         
     # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
     print(f"Nieobsłużony callback: {query.data}")
