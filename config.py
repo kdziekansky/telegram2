@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 # Ładowanie zmiennych środowiskowych z pliku .env
 load_dotenv()
 
+ADMIN_USER_IDS = [1743680448, 787188598]
+
 # Konfiguracja nazwy i wersji bota
 BOT_NAME = "MyPremium AI"
 BOT_VERSION = "1.0.0"

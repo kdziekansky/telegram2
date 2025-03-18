@@ -6,7 +6,7 @@ from config import SUBSCRIPTION_PLANS
 from database.supabase_client import create_license
 
 # Lista ID administratorów bota - tutaj należy dodać swoje ID
-ADMIN_USER_IDS = [123456789]  # Zastąp swoim ID użytkownika Telegram
+from config import ADMIN_USER_IDS  # Zastąp swoim ID użytkownika Telegram
 
 async def add_license(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """

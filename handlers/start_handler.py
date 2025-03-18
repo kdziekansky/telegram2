@@ -181,7 +181,7 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
         keyboard = [
             [
                 InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
-                InlineKeyboardButton(et_text("image_generate", language), callback_data="menu_image_generate")
+                InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
             ],
             [
                 InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
@@ -197,24 +197,33 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
         
         # Aktualizuj wiadomość
         try:
-            # Nie możemy zmienić tekstu na zdjęcie, musimy usunąć starą wiadomość
-            await query.delete_message()
-            
-            # Wyślij nową wiadomość ze zdjęciem
-            message = await context.bot.send_photo(
-                chat_id=query.message.chat_id,
-                photo=banner_url,
+            # Spróbuj najpierw edytować istniejącą wiadomość z tekstem powitalnym
+            await query.edit_message_caption(
                 caption=welcome_text,
                 reply_markup=reply_markup
             )
             
             # Zapisz ID wiadomości menu i stan menu
             from handlers.menu_handler import store_menu_state
-            store_menu_state(context, user_id, 'main', message.message_id)
+            store_menu_state(context, user_id, 'main', query.message.message_id)
         except Exception as e:
-            print(f"Błąd przy aktualizacji wiadomości: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"Błąd przy aktualizacji podpisu wiadomości: {e}")
+            try:
+                # Jeśli nie możemy edytować, to spróbujmy wysłać nową wiadomość
+                message = await context.bot.send_message(
+                    chat_id=query.message.chat_id,
+                    text=welcome_text,
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+                
+                # Zapisz ID wiadomości menu i stan menu
+                from handlers.menu_handler import store_menu_state
+                store_menu_state(context, user_id, 'main', message.message_id)
+            except Exception as e2:
+                print(f"Błąd przy wysyłaniu nowej wiadomości: {e2}")
+                import traceback
+                traceback.print_exc()
     except Exception as e:
         print(f"Błąd w funkcji handle_language_selection: {e}")
         import traceback

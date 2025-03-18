@@ -119,7 +119,7 @@ async def admin_generate_code(update: Update, context: ContextTypes.DEFAULT_TYPE
     user_id = update.effective_user.id
     
     # Lista ID administratorów bota
-    ADMIN_USER_IDS = [123456789]  # Należy zaktualizować do rzeczywistych ID administracyjnych
+    from config import ADMIN_USER_IDS  # Należy zaktualizować do rzeczywistych ID administracyjnych
     
     # Sprawdź, czy użytkownik jest administratorem
     if user_id not in ADMIN_USER_IDS:
