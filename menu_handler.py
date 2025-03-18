@@ -161,9 +161,15 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mode_name = CHAT_MODES[current_mode]["name"] if current_mode in CHAT_MODES else "Standard"
     model_name = AVAILABLE_MODELS[current_model] if current_model in AVAILABLE_MODELS else "GPT-3.5"
     
-    # Przygotuj tekst statusu - używamy welcome_message
-    welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
-    status_text = f"{welcome_text}\n\n*{get_text('status', language)}:*\n{get_text('credits', language)}: *{credits}*\n{get_text('current_mode', language)}: *{mode_name}*\n{get_text('current_model', language)}: *{model_name}*\n\n{get_text('select_option', language, default='Wybierz opcję z menu poniżej:')}"
+    # Przygotuj tekst statusu
+    status_text = f"""*{get_text("main_menu", language)}*
+
+*{get_text("status", language)}:*
+{get_text("credits", language)}: *{credits}*
+{get_text("current_mode", language)}: *{mode_name}*
+{get_text("current_model", language)}: *{model_name}*
+
+{get_text("select_option", language, default="Wybierz opcję z menu poniżej:")}"""
     
     # Utwórz klawiaturę menu
     reply_markup = create_main_menu_markup(language)
@@ -283,52 +289,36 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
-print(f"Debug - welcome_text: {welcome_text}")
-print(f"Długość tekstu: {len(welcome_text)} znaków")
-print(f"Znak na pozycji 155: '{welcome_text[155:160]}' (jeśli istnieje)")
-
-try:
-    if hasattr(query.message, 'caption'):
-        await query.edit_message_caption(
-            caption=welcome_text,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
-    else:
-        await query.edit_message_text(
-            text=welcome_text,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
-except Exception as e:
-    print(f"Błąd formatowania: {e}")
-    # Próba wysłania bez formatowania Markdown
-    if hasattr(query.message, 'caption'):
-        await query.edit_message_caption(
-            caption=welcome_text,
-            reply_markup=reply_markup
-        )
-    else:
-        await query.edit_message_text(
-            text=welcome_text, 
-            reply_markup=reply_markup
-        )
-
-        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
-        if hasattr(query.message, 'caption'):
-            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
-            await query.edit_message_caption(
-                caption=get_text("select_chat_mode", language),
-                reply_markup=reply_markup,
-            )
-        else:
-            # Standardowa wiadomość tekstowa
-            await query.edit_message_text(
-                text=get_text("select_chat_mode", language),
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
-            )
+        try:
+            # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+            if hasattr(query.message, 'caption'):
+                # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+                await query.edit_message_caption(
+                    caption=get_text("select_chat_mode", language),
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                # Standardowa wiadomość tekstowa
+                await query.edit_message_text(
+                    text=get_text("select_chat_mode", language),
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+        except Exception as e:
+            print(f"Błąd formatowania: {e}")
+            # Próba wysłania bez formatowania Markdown
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("select_chat_mode", language),
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("select_chat_mode", language), 
+                    reply_markup=reply_markup
+                )
+                
         return True
         
     elif query.data == "menu_section_credits":
@@ -483,21 +473,31 @@ except Exception as e:
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Użycie welcome_message zamiast main_menu
-        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
+        # Pobierz aktualną ilość kredytów
+        credits = get_user_credits(user_id)
+        
+        # Pobierz aktualny tryb i model
+        current_mode = get_user_current_mode(context, user_id)
+        current_model = get_user_current_model(context, user_id)
+        
+        # Przygotuj informacje o aktualnym trybie i modelu
+        mode_name = CHAT_MODES[current_mode]["name"] if current_mode in CHAT_MODES else "Standard"
+        model_name = AVAILABLE_MODELS[current_model] if current_model in AVAILABLE_MODELS else "GPT-3.5"
+        
+        message_text = f"{get_text('main_menu', language)}\n\n{get_text('status', language)}:\n{get_text('credits', language)}: {credits}\n{get_text('current_mode', language)}: {mode_name}\n{get_text('current_model', language)}: {current_model}\n\n{get_text('select_option', language)}"
         
         # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
         if hasattr(query.message, 'caption'):
             # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
             await query.edit_message_caption(
-                caption=welcome_text,
+                caption=message_text,
                 reply_markup=reply_markup,
                 parse_mode=ParseMode.MARKDOWN
             )
         else:
             # Standardowa wiadomość tekstowa
             await query.edit_message_text(
-                text=welcome_text,
+                text=message_text,
                 reply_markup=reply_markup,
                 parse_mode=ParseMode.MARKDOWN
             )
