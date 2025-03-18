@@ -168,6 +168,62 @@ async def analyze_document(file_content, file_name):
         print(f"Błąd analizy dokumentu: {e}")
         return f"Przepraszam, wystąpił błąd podczas analizy dokumentu: {str(e)}"
 
+async def analyze_document(file_content, file_name, mode="analyze"):
+    """
+    Analizuj lub tłumacz dokument za pomocą OpenAI API
+    
+    Args:
+        file_content (bytes): Zawartość pliku
+        file_name (str): Nazwa pliku
+        mode (str): Tryb analizy: "analyze" (domyślnie) lub "translate"
+    
+    Returns:
+        str: Analiza dokumentu, tłumaczenie lub informacja o błędzie
+    """
+    try:
+        # Określamy typ zawartości na podstawie rozszerzenia pliku
+        file_extension = os.path.splitext(file_name)[1].lower()
+        
+        # Przygotuj odpowiednie instrukcje w zależności od trybu
+        if mode == "translate":
+            system_instruction = "Jesteś profesjonalnym tłumaczem. Twoim zadaniem jest przetłumaczenie tekstu z dokumentu na język polski. Zachowaj oryginalny format tekstu."
+            user_instruction = f"Przetłumacz tekst z pliku {file_name} na język polski. Zachowaj strukturę i formatowanie oryginału."
+        else:  # tryb analyze
+            system_instruction = "Jesteś pomocnym asystentem, który analizuje dokumenty i pliki."
+            user_instruction = f"Przeanalizuj plik {file_name} i opisz jego zawartość. Podaj kluczowe informacje i wnioski."
+        
+        messages = [
+            {
+                "role": "system", 
+                "content": system_instruction
+            },
+            {
+                "role": "user",
+                "content": user_instruction
+            }
+        ]
+        
+        # Dla plików tekstowych możemy dodać zawartość bezpośrednio
+        if file_extension in ['.txt', '.csv', '.md', '.json', '.xml', '.html', '.js', '.py', '.cpp', '.c', '.java']:
+            try:
+                # Próbuj odkodować jako UTF-8
+                file_text = file_content.decode('utf-8')
+                messages[1]["content"] += f"\n\nZawartość pliku:\n\n{file_text}"
+            except UnicodeDecodeError:
+                # Jeśli nie możemy odkodować, traktuj jako plik binarny
+                messages[1]["content"] += "\n\nPlik zawiera dane binarne, które nie mogą być wyświetlone jako tekst."
+        
+        response = await client.chat.completions.create(
+            model="gpt-4o",  # Użyjemy GPT-4o dla lepszej jakości
+            messages=messages,
+            max_tokens=1500  # Zwiększamy limit tokenów dla dłuższych tekstów
+        )
+        
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Błąd analizy dokumentu: {e}")
+        return f"Przepraszam, wystąpił błąd podczas analizy dokumentu: {str(e)}"
+
 async def analyze_image(image_content, image_name, mode="analyze"):
     """
     Analizuj obraz za pomocą OpenAI API

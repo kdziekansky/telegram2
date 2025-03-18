@@ -194,7 +194,22 @@ translations = {
         "onboarding_finish": "🎉 **Gratulacje!**\n\nZakończyłeś przewodnik po funkcjach bota {bot_name}. Teraz znasz już wszystkie możliwości, które oferuje nasz bot!\n\nJeśli masz jakiekolwiek pytania, użyj komendy /menu, aby otworzyć menu główne lub po prostu zapytaj bota.\n\nMiłego korzystania! 🚀",
         "onboarding_next": "Dalej ➡️",
         "onboarding_back": "⬅️ Wstecz",
-        "onboarding_finish_button": "🏁 Zakończ przewodnik"
+        "onboarding_finish_button": "🏁 Zakończ przewodnik",
+
+        # Dla PDF polskiego
+        "not_pdf_file": "Plik nie jest w formacie PDF. Proszę przesłać plik PDF.",
+        "translating_pdf": "Tłumaczę pierwszy akapit z pliku PDF, proszę czekać...",
+        "pdf_translation_result": "Wynik tłumaczenia pierwszego akapitu",
+        "original_text": "Oryginalny tekst",
+        "translated_text": "Przetłumaczony tekst",
+        "pdf_translation_error": "Błąd podczas tłumaczenia pliku PDF",
+        "translate_pdf_command": "Aby przetłumaczyć pierwszy akapit z pliku PDF, prześlij plik PDF z komentarzem /translate",
+        "pdf_translate_button": "🔄 Przetłumacz pierwszy akapit",
+        "translating_document": "Tłumaczę dokument, proszę czekać...",
+        "subscription_expired_short": "Niewystarczająca liczba kredytów",
+        "translate_first_paragraph": "Przetłumacz pierwszy akapit",
+        "translation_to_english": "Tłumaczenie na angielski",
+        "translation_complete": "Tłumaczenie zakończone"
     },
     
     "en": {
@@ -388,7 +403,22 @@ translations = {
         "onboarding_finish": "🎉 **Congratulations!**\n\nYou've completed the {bot_name} feature guide. Now you know all the capabilities our bot offers!\n\nIf you have any questions, use the /menu command to open the main menu or simply ask the bot.\n\nEnjoy using it! 🚀",
         "onboarding_next": "Next ➡️",
         "onboarding_back": "⬅️ Back",
-        "onboarding_finish_button": "🏁 Finish guide"
+        "onboarding_finish_button": "🏁 Finish guide",
+
+        # Dla PDF angielskiego
+        "not_pdf_file": "The file is not in PDF format. Please upload a PDF file.",
+        "translating_pdf": "Translating the first paragraph from the PDF file, please wait...",
+        "pdf_translation_result": "Translation result of the first paragraph",
+        "original_text": "Original text",
+        "translated_text": "Translated text",
+        "pdf_translation_error": "Error while translating the PDF file",
+        "translate_pdf_command": "To translate the first paragraph from a PDF file, upload a PDF file with the /translate comment",
+        "pdf_translate_button": "🔄 Translate first paragraph",
+        "translating_document": "Translating document, please wait...",
+        "subscription_expired_short": "Insufficient credits",
+        "translate_first_paragraph": "Translate first paragraph",
+        "translation_to_english": "English translation",
+        "translation_complete": "Translation complete"
     },
     
     "ru": {
@@ -582,7 +612,22 @@ translations = {
         "onboarding_finish": "🎉 **Поздравляем!**\n\nВы завершили руководство по функциям бота {bot_name}. Теперь вы знаете все возможности, которые предлагает наш бот!\n\nЕсли у вас есть вопросы, используйте команду /menu, чтобы открыть главное меню, или просто спросите бота.\n\nПриятного использования! 🚀",
         "onboarding_next": "Далее ➡️",
         "onboarding_back": "⬅️ Назад",
-        "onboarding_finish_button": "🏁 Завершить руководство"
+        "onboarding_finish_button": "🏁 Завершить руководство",
+
+        # PDF rosyjski
+        "not_pdf_file": "Файл не в формате PDF. Пожалуйста, загрузите файл PDF.",
+        "translating_pdf": "Перевожу первый абзац из файла PDF, пожалуйста, подождите...",
+        "pdf_translation_result": "Результат перевода первого абзаца",
+        "original_text": "Оригинальный текст",
+        "translated_text": "Переведенный текст",
+        "pdf_translation_error": "Ошибка при переводе файла PDF",
+        "translate_pdf_command": "Чтобы перевести первый абзац из файла PDF, загрузите файл PDF с комментарием /translate",
+        "pdf_translate_button": "🔄 Перевести первый абзац",
+        "translating_document": "Перевожу документ, пожалуйста, подождите...",
+        "subscription_expired_short": "Недостаточно кредитов",
+        "translate_first_paragraph": "Перевести первый абзац",
+        "translation_to_english": "Перевод на английский",
+        "translation_complete": "Перевод завершен"
     }
 }
 

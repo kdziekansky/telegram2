@@ -698,11 +698,28 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Sprawdź rozmiar pliku (limit 25MB)
     if document.file_size > 25 * 1024 * 1024:
-        await update.message.reply_text("Plik jest zbyt duży. Maksymalny rozmiar to 25MB.")
+        await update.message.reply_text(get_text("file_too_large", language))
         return
     
+    # Sprawdź, czy to jest prośba o tłumaczenie
+    caption = update.message.caption or ""
+    translate_mode = False
+    
+    if caption.lower().startswith("/translate") or caption.lower().startswith("przetłumacz"):
+        translate_mode = True
+    
+    # Sprawdź, czy plik to PDF i czy jest w trybie tłumaczenia
+    is_pdf = file_name.lower().endswith('.pdf')
+    
     # Pobierz plik
-    message = await update.message.reply_text(get_text("analyzing_document", language))
+    if translate_mode and is_pdf:
+        from handlers.pdf_handler import handle_pdf_translation
+        await handle_pdf_translation(update, context)
+        return
+    elif translate_mode:
+        message = await update.message.reply_text(get_text("translating_document", language))
+    else:
+        message = await update.message.reply_text(get_text("analyzing_file", language))
     
     # Wyślij informację o aktywności bota
     await update.message.chat.send_action(action=ChatAction.TYPING)
@@ -710,24 +727,41 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await context.bot.get_file(document.file_id)
     file_bytes = await file.download_as_bytearray()
     
-    # Analizuj plik
-    analysis = await analyze_document(file_bytes, file_name)
+    # Analizuj plik - w trybie tłumaczenia lub analizy w zależności od opcji
+    if translate_mode:
+        analysis = await analyze_document(file_bytes, file_name, mode="translate")
+        header = f"*{get_text('translated_text', language)}:*\n\n"
+    else:
+        analysis = await analyze_document(file_bytes, file_name)
+        header = f"*{get_text('file_analysis', language)}:* {file_name}\n\n"
     
     # Odejmij kredyty
-    deduct_user_credits(user_id, credit_cost, f"Analiza dokumentu: {file_name}")
+    description = "Tłumaczenie dokumentu" if translate_mode else "Analiza dokumentu"
+    deduct_user_credits(user_id, credit_cost, f"{description}: {file_name}")
     
     # Wyślij analizę do użytkownika
     await message.edit_text(
-        f"*Analiza pliku:* {file_name}\n\n{analysis}",
+        f"{header}{analysis}",
         parse_mode=ParseMode.MARKDOWN
     )
+    
+    # Dodaj klawiaturę z dodatkowymi opcjami dla plików PDF
+    if is_pdf and not translate_mode:
+        keyboard = [[
+            InlineKeyboardButton(get_text("pdf_translate_button", language), callback_data=f"translate_pdf_{document.file_id}")
+        ]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            await message.edit_reply_markup(reply_markup=reply_markup)
+        except Exception as e:
+            print(f"Błąd dodawania klawiatury: {e}")
     
     # Sprawdź aktualny stan kredytów
     credits = get_user_credits(user_id)
     if credits < 5:
         await update.message.reply_text(
-            f"*Uwaga:* Pozostało Ci tylko *{credits}* kredytów. "
-            f"Kup więcej za pomocą komendy /buy.",
+            f"*{get_text('low_credits_warning', language)}* {get_text('low_credits_message', language, credits=credits)}",
             parse_mode=ParseMode.MARKDOWN
         )
 
@@ -1032,6 +1066,96 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
                 )
             return
     
+        # Obsługa przycisku tłumaczenia PDF
+    if query.data.startswith("translate_pdf_"):
+        document_file_id = query.data.replace("translate_pdf_", "")
+        user_id = query.from_user.id
+        language = get_user_language(context, user_id)
+        
+        # Sprawdź, czy użytkownik ma wystarczającą liczbę kredytów
+        credit_cost = 8  # Koszt tłumaczenia PDF
+        if not check_user_credits(user_id, credit_cost):
+            await query.answer(get_text("subscription_expired_short", language, default="Niewystarczająca liczba kredytów."))
+            
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("subscription_expired", language),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("subscription_expired", language),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            return
+        
+        # Pobierz plik
+        try:
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("translating_pdf", language),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("translating_pdf", language),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            
+            file = await context.bot.get_file(document_file_id)
+            file_bytes = await file.download_as_bytearray()
+            
+            # Tłumacz pierwszy akapit z PDF
+            from utils.pdf_translator import translate_pdf_first_paragraph
+            result = await translate_pdf_first_paragraph(file_bytes)
+            
+            # Odejmij kredyty
+            deduct_user_credits(user_id, credit_cost, "Tłumaczenie pierwszego akapitu z PDF")
+            
+            # Przygotuj odpowiedź
+            if result["success"]:
+                response = f"*{get_text('pdf_translation_result', language)}*\n\n"
+                response += f"*{get_text('original_text', language)}:*\n{result['original_text'][:500]}...\n\n"
+                response += f"*{get_text('translated_text', language)}:*\n{result['translated_text'][:500]}..."
+            else:
+                response = f"*{get_text('pdf_translation_error', language)}*\n\n{result['error']}"
+            
+            # Wyślij wynik tłumaczenia
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=response,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=response,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            
+            # Sprawdź aktualny stan kredytów
+            credits = get_user_credits(user_id)
+            if credits < 5:
+                await context.bot.send_message(
+                    chat_id=query.message.chat_id,
+                    text=f"*{get_text('low_credits_warning', language)}* {get_text('low_credits_message', language, credits=credits)}",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            
+            return
+        except Exception as e:
+            print(f"Błąd przy tłumaczeniu PDF: {e}")
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=f"{get_text('pdf_translation_error', language)}: {str(e)}",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=f"{get_text('pdf_translation_error', language)}: {str(e)}",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            return
+
     # Obsługa kredytów
     if query.data.startswith("buy_") or query.data.startswith("credits_"):
         from handlers.credit_handler import handle_credit_callback
