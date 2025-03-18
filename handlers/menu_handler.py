@@ -523,3 +523,60 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     
     # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
     return False
+
+async def set_user_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Ustawia nazwę użytkownika
+    Użycie: /setname [nazwa]
+    """
+    user_id = update.effective_user.id
+    language = get_user_language(context, user_id)
+    
+    # Sprawdź, czy podano argumenty
+    if not context.args or len(' '.join(context.args)) < 1:
+        await update.message.reply_text(
+            get_text("settings_change_name", language),
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+    
+    # Połącz argumenty, aby utworzyć nazwę
+    new_name = ' '.join(context.args)
+    
+    # Ogranicz długość nazwy
+    if len(new_name) > 50:
+        new_name = new_name[:47] + "..."
+    
+    try:
+        # Zaktualizuj nazwę użytkownika w bazie danych
+        from database.sqlite_client import sqlite3, DB_PATH
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            "UPDATE users SET first_name = ? WHERE id = ?", 
+            (new_name, user_id)
+        )
+        conn.commit()
+        conn.close()
+        
+        # Zaktualizuj nazwę w kontekście, jeśli istnieje
+        if 'user_data' not in context.chat_data:
+            context.chat_data['user_data'] = {}
+        
+        if user_id not in context.chat_data['user_data']:
+            context.chat_data['user_data'][user_id] = {}
+        
+        context.chat_data['user_data'][user_id]['name'] = new_name
+        
+        # Potwierdź zmianę nazwy
+        await update.message.reply_text(
+            f"{get_text('name_changed', language)} *{new_name}*",
+            parse_mode=ParseMode.MARKDOWN
+        )
+    except Exception as e:
+        print(f"Błąd przy zmianie nazwy użytkownika: {e}")
+        await update.message.reply_text(
+            "Wystąpił błąd podczas zmiany nazwy. Spróbuj ponownie później.",
+            parse_mode=ParseMode.MARKDOWN
+        )

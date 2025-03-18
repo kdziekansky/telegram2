@@ -132,23 +132,23 @@ def get_onboarding_image_url(step_name):
     """
     # Mapowanie kroków do URL obrazów - każdy krok ma unikalny obraz
     images = {
-        'welcome': "https://i.imgur.com/pPb7wfV.png",     # Obrazek powitalny
-        'chat': "https://i.imgur.com/L8SdPX1.png",        # Obrazek dla czatu z AI
-        'modes': "https://i.imgur.com/Z5n3cCo.png",       # Obrazek dla trybów czatu
-        'images': "https://i.imgur.com/Jwd3W0L.png",      # Obrazek dla generowania obrazów
-        'analysis': "https://i.imgur.com/7tD9MZq.png",    # Obrazek dla analizy dokumentów
-        'credits': "https://i.imgur.com/xE1uVJz.png",     # Obrazek dla systemu kredytów
-        'referral': "https://i.imgur.com/f3NZsH7.png",    # Obrazek dla programu referencyjnego
-        'export': "https://i.imgur.com/FvRMnKY.png",      # Obrazek dla eksportu
+        'welcome': "https://i.imgur.com/kqIj0SC.png",     # Obrazek powitalny
+        'chat': "https://i.imgur.com/kqIj0SC.png",        # Obrazek dla czatu z AI
+        'modes': "https://i.imgur.com/vyNkgEi.png",       # Obrazek dla trybów czatu
+        'images': "https://i.imgur.com/R3rLbNV.png",      # Obrazek dla generowania obrazów
+        'analysis': "https://i.imgur.com/ky7MWTk.png",    # Obrazek dla analizy dokumentów
+        'credits': "https://i.imgur.com/0SM3Lj0.png",     # Obrazek dla systemu kredytów
+        'referral': "https://i.imgur.com/0I1UjLi.png",    # Obrazek dla programu referencyjnego
+        'export': "https://i.imgur.com/xyZLjac.png",      # Obrazek dla eksportu
         'themes': "https://i.imgur.com/BjHVLZy.png",      # Obrazek dla tematów
         'reminders': "https://i.imgur.com/VqT5aQR.png",   # Obrazek dla przypomnień
         'notes': "https://i.imgur.com/8wPNFkm.png",       # Obrazek dla notatek
-        'settings': "https://i.imgur.com/NcPwXcT.png",    # Obrazek dla ustawień
-        'finish': "https://i.imgur.com/YnL3VJT.png"       # Obrazek dla końca onboardingu
+        'settings': "https://i.imgur.com/XUAAxe9.png",    # Obrazek dla ustawień
+        'finish': "https://i.imgur.com/bvPAD9a.png"       # Obrazek dla końca onboardingu
     }
     
     # Użyj odpowiedniego obrazka dla danego kroku lub domyślnego, jeśli nie znaleziono
-    return images.get(step_name, "https://i.imgur.com/YPubLDE.png")
+    return images.get(step_name, "https://i.imgur.com/kqIj0SC.png")
 
 async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -1301,6 +1301,63 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             )
     except:
         pass
+
+async def set_user_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Ustawia nazwę użytkownika
+    Użycie: /setname [nazwa]
+    """
+    user_id = update.effective_user.id
+    language = get_user_language(context, user_id)
+    
+    # Sprawdź, czy podano argumenty
+    if not context.args or len(' '.join(context.args)) < 1:
+        await update.message.reply_text(
+            get_text("settings_change_name", language),
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+    
+    # Połącz argumenty, aby utworzyć nazwę
+    new_name = ' '.join(context.args)
+    
+    # Ogranicz długość nazwy
+    if len(new_name) > 50:
+        new_name = new_name[:47] + "..."
+    
+    try:
+        # Zaktualizuj nazwę użytkownika w bazie danych
+        from database.sqlite_client import sqlite3, DB_PATH
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            "UPDATE users SET first_name = ? WHERE id = ?", 
+            (new_name, user_id)
+        )
+        conn.commit()
+        conn.close()
+        
+        # Zaktualizuj nazwę w kontekście, jeśli istnieje
+        if 'user_data' not in context.chat_data:
+            context.chat_data['user_data'] = {}
+        
+        if user_id not in context.chat_data['user_data']:
+            context.chat_data['user_data'][user_id] = {}
+        
+        context.chat_data['user_data'][user_id]['name'] = new_name
+        
+        # Potwierdź zmianę nazwy
+        await update.message.reply_text(
+            f"{get_text('name_changed', language)} *{new_name}*",
+            parse_mode=ParseMode.MARKDOWN
+        )
+    except Exception as e:
+        print(f"Błąd przy zmianie nazwy użytkownika: {e}")
+        await update.message.reply_text(
+            "Wystąpił błąd podczas zmiany nazwy. Spróbuj ponownie później.",
+            parse_mode=ParseMode.MARKDOWN
+        )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
