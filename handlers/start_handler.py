@@ -150,15 +150,10 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
         language = query.data[11:]  # Usuń prefix "start_lang_"
         user_id = query.from_user.id
         
-        # Zapisz język w bazie danych
+        # Zapisz język w bazie danych - używamy nowej funkcji
         try:
-            from database.sqlite_client import sqlite3, DB_PATH
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            
-            cursor.execute("UPDATE users SET language = ? WHERE id = ?", (language, user_id))
-            conn.commit()
-            conn.close()
+            from database.sqlite_client import update_user_language
+            update_user_language(user_id, language)
         except Exception as e:
             print(f"Błąd zapisywania języka: {e}")
         
@@ -171,13 +166,15 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
         
         context.chat_data['user_data'][user_id]['language'] = language
         
+        # Teraz wszystkie pobierane teksty będą używać nowego języka
+        
         # Link do zdjęcia bannera
-        banner_url = "https://i.imgur.com/OiPImmC.png"  # Ten sam obraz co w start_command
+        banner_url = "https://i.imgur.com/OiPImmC.png"
         
         # Pobierz przetłumaczony tekst powitalny
         welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
         
-        # Utwórz klawiaturę menu
+        # Utwórz klawiaturę menu z przetłumaczonymi tekstami
         keyboard = [
             [
                 InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
@@ -197,7 +194,6 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
         
         # Aktualizuj wiadomość
         try:
-            # Spróbuj najpierw edytować istniejącą wiadomość z tekstem powitalnym
             await query.edit_message_caption(
                 caption=welcome_text,
                 reply_markup=reply_markup
@@ -222,19 +218,8 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
                 store_menu_state(context, user_id, 'main', message.message_id)
             except Exception as e2:
                 print(f"Błąd przy wysyłaniu nowej wiadomości: {e2}")
-                import traceback
-                traceback.print_exc()
     except Exception as e:
         print(f"Błąd w funkcji handle_language_selection: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        try:
-            await query.edit_message_text(
-                "Wystąpił błąd podczas wyboru języka. Spróbuj ponownie później."
-            )
-        except:
-            pass
 
 async def show_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id=None, language=None):
     """

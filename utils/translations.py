@@ -239,6 +239,12 @@ translations = {
         "buy_more_credits": "Kup więcej kredytów",
         "credit_history": "Historia transakcji",
         "credits_analytics": "Analiza wykorzystania kredytów",
+
+        # Nowe tłumaczenia do obsługi trybów
+        "selected_mode": "Wybrany tryb",
+        "description": "Opis",
+        "ask_question_now": "Możesz teraz zadać pytanie w wybranym trybie.",
+        "mode_selected_message": "Wybrany tryb: *{mode_name}*\nKoszt: *{credit_cost}* kredyt(ów) za wiadomość\n\nOpis: _{description}_\n\nMożesz teraz zadać pytanie w wybranym trybie.",
     },
     
     "en": {
@@ -478,6 +484,12 @@ translations = {
         "buy_more_credits": "Buy more credits",
         "credit_history": "Transaction history",
         "credits_analytics": "Credit usage analytics",
+        
+        # Nowe tłumaczenia do obsługi trybów
+        "selected_mode": "Selected mode",
+        "description": "Description",
+        "ask_question_now": "You can now ask a question in the selected mode.",
+        "mode_selected_message": "Selected mode: *{mode_name}*\nCost: *{credit_cost}* credit(s) per message\n\nDescription: _{description}_\n\nYou can now ask a question in the selected mode.",
     },
     
     "ru": {
@@ -717,6 +729,12 @@ translations = {
         "buy_more_credits": "Купить больше кредитов",
         "credit_history": "История транзакций",
         "credits_analytics": "Аналитика использования кредитов",
+        
+        # Nowe tłumaczenia do obsługi trybów
+        "selected_mode": "Выбранный режим",
+        "description": "Описание",
+        "ask_question_now": "Теперь вы можете задать вопрос в выбранном режиме.",
+        "mode_selected_message": "Выбранный режим: *{mode_name}*\nСтоимость: *{credit_cost}* кредит(ов) за сообщение\n\nОписание: _{description}_\n\nТеперь вы можете задать вопрос в выбранном режиме.",
     }
 }
 

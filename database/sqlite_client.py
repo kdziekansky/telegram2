@@ -33,6 +33,14 @@ def init_database():
             messages_limit INTEGER DEFAULT 0
         )
         ''')
+        # Tutaj dodaj sprawdzenie i dodanie kolumny language
+        cursor.execute("PRAGMA table_info(users)")
+        columns = cursor.fetchall()
+        column_names = [col[1] for col in columns]
+
+        if 'language' not in column_names and 'language_code' in column_names:
+            cursor.execute("ALTER TABLE users ADD COLUMN language TEXT")
+            cursor.execute("UPDATE users SET language = language_code")
         
         # Tabela licenses
         cursor.execute('''
@@ -94,9 +102,25 @@ def init_database():
     except Exception as e:
         logger.error(f"Błąd inicjalizacji bazy danych SQLite: {e}")
         return False
-
+ 
 # Inicjalizacja bazy danych przy imporcie modułu
 init_database()
+
+def update_user_language(user_id, language):
+    """Aktualizuje język użytkownika w bazie danych"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        cursor.execute("UPDATE users SET language = ? WHERE id = ?", (language, user_id))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        logger.error(f"Błąd przy aktualizacji języka użytkownika: {e}")
+        if 'conn' in locals():
+            conn.close()
+        return False
 
 def get_or_create_user(user_id, username=None, first_name=None, last_name=None, language_code=None):
     """Pobierz lub utwórz użytkownika w bazie danych"""

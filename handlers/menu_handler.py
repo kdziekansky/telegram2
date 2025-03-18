@@ -8,16 +8,7 @@ from database.credits_client import get_user_credits
 # Funkcje pomocnicze
 
 def get_user_language(context, user_id):
-    """
-    Pobiera język użytkownika z kontekstu lub bazy danych
-    
-    Args:
-        context: Kontekst bota
-        user_id: ID użytkownika
-        
-    Returns:
-        str: Kod języka (pl, en, ru)
-    """
+    """Pobiera język użytkownika z kontekstu lub bazy danych"""
     # Sprawdź, czy język jest zapisany w kontekście
     if 'user_data' in context.chat_data and user_id in context.chat_data['user_data'] and 'language' in context.chat_data['user_data'][user_id]:
         return context.chat_data['user_data'][user_id]['language']
@@ -28,8 +19,15 @@ def get_user_language(context, user_id):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        cursor.execute("SELECT language_code FROM users WHERE id = ?", (user_id,))
+        # Sprawdź najpierw kolumnę 'language'
+        cursor.execute("SELECT language FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
+        
+        # Jeśli nie ma wyników, sprawdź 'language_code'
+        if not result or not result[0]:
+            cursor.execute("SELECT language_code FROM users WHERE id = ?", (user_id,))
+            result = cursor.fetchone()
+        
         conn.close()
         
         if result and result[0]:
