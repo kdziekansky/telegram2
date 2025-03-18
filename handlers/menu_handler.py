@@ -289,21 +289,36 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
-        if hasattr(query.message, 'caption'):
-            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
-            await query.edit_message_caption(
-                caption=get_text("select_chat_mode", language),
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
-            )
-        else:
-            # Standardowa wiadomość tekstowa
-            await query.edit_message_text(
-                text=get_text("select_chat_mode", language),
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
-            )
+        try:
+            # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+            if hasattr(query.message, 'caption'):
+                # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+                await query.edit_message_caption(
+                    caption=get_text("select_chat_mode", language),
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                # Standardowa wiadomość tekstowa
+                await query.edit_message_text(
+                    text=get_text("select_chat_mode", language),
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+        except Exception as e:
+            print(f"Błąd formatowania: {e}")
+            # Próba wysłania bez formatowania Markdown
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("select_chat_mode", language),
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("select_chat_mode", language), 
+                    reply_markup=reply_markup
+                )
+                
         return True
         
     elif query.data == "menu_section_credits":
