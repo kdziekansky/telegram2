@@ -401,7 +401,7 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     # Utwórz tekst menu
-    menu_text = f"""*{get_text('main_menu', language)}*
+    menu_text = f"""{get_text('welcome_message', language, bot_name=BOT_NAME)}
 
 *{get_text('status', language)}:*
 {get_text('credits', language)}: *{credits}*
