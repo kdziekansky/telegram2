@@ -94,7 +94,7 @@ async def onboarding_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Lista kroków onboardingu
     steps = [
         'welcome', 'chat', 'modes', 'images', 'analysis', 
-        'credits', 'referral', 'export', 'themes', 'reminders', 'notes', 
+        'credits', 'referral', 'export', 'themes', 
         'settings', 'finish'
     ]
     
@@ -907,11 +907,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_language_selection(update, context)
         return
     
-    # Obsługa przycisku wyboru trybu
-    if query.data.startswith("mode_"):
-        mode_id = query.data[5:]  # Pobierz ID trybu (usuń prefix "mode_")
-        await handle_mode_selection(update, context, mode_id)
-        return
     
     # Obsługa przycisku wyboru modelu
     if query.data.startswith("model_"):
@@ -919,6 +914,21 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_model_selection(update, context, model_id)
         return
     
+    if query.data.startswith("mode_"):
+    print(f"Rozpoznano callback trybu: {query.data}")
+    mode_id = query.data[5:]  # Pobierz ID trybu (usuń prefix "mode_")
+    try:
+        await handle_mode_selection(update, context, mode_id)
+        return
+    except Exception as e:
+        print(f"Błąd w obsłudze trybu: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # Wyślij informację o błędzie
+        await query.answer(f"Błąd: {str(e)}")
+        return
+
+
     # Obsługa tematów konwersacji
     if query.data.startswith("theme_") or query.data == "new_theme" or query.data == "no_theme":
         from handlers.theme_handler import handle_theme_callback
@@ -1293,6 +1303,24 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     except:
         pass
 
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Obsługa komendy /help
+    Wyświetla informacje pomocnicze o bocie
+    """
+    user_id = update.effective_user.id
+    language = get_user_language(context, user_id)
+    
+    # Pobierz tekst pomocy z tłumaczeń
+    help_text = get_text("help_text", language)
+    
+    # Wyślij wiadomość pomocy
+    await update.message.reply_text(
+        help_text,
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+
 async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, mode_id):
     """Obsługa wyboru trybu czatu"""
     query = update.callback_query
@@ -1514,6 +1542,9 @@ def main():
     # Inicjalizacja aplikacji
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
+    # Następnie dodaj handler dla tej komendy w funkcji main():
+    application.add_handler(CommandHandler("help", help_command))
+
     # Podstawowe komendy - USUNIĘTY handler removekeyboard
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("status", check_status))

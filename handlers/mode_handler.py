@@ -20,9 +20,11 @@ async def show_modes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Utwórz przyciski dla dostępnych trybów
     keyboard = []
     for mode_id, mode_info in CHAT_MODES.items():
+        # Użyj tłumaczeń z translations.py zamiast hardkodowanych tekstów
+        mode_name = get_text(f"chat_mode_{mode_id}", language, default=mode_info['name'])
         keyboard.append([
             InlineKeyboardButton(
-                text=f"{mode_info['name']} ({mode_info['credit_cost']} kredyt(ów))", 
+                text=f"{mode_name} ({mode_info['credit_cost']} {get_text('credit', language)})", 
                 callback_data=f"mode_{mode_id}"
             )
         ])
@@ -30,9 +32,10 @@ async def show_modes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        get_text("settings_choose_model", language),
+        get_text("select_chat_mode", language),
         reply_markup=reply_markup
     )
+
 
 async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Obsługa wyboru trybu czatu"""
