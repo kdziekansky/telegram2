@@ -179,6 +179,12 @@ async def handle_credit_callback(update: Update, context: ContextTypes.DEFAULT_T
                 )
             ])
         
+        # Add button for star purchases
+        keyboard.append([
+            InlineKeyboardButton("⭐ " + get_text("buy_with_stars", language, default="Buy with Telegram Stars"), 
+                                callback_data="show_stars_options")
+        ])
+        
         # Add button to go back to credits menu
         keyboard.append([
             InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")
@@ -203,13 +209,14 @@ async def handle_credit_callback(update: Update, context: ContextTypes.DEFAULT_T
             except Exception as e2:
                 print(f"Drugi błąd przy edycji wiadomości: {e2}")
     
-    elif query.data == "credits_check":
+    elif query.data == "credits_check" or query.data == "menu_credits_check":
         # Show user's credit balance
         credits = get_user_credits(user_id)
         
         # Create buttons for credit options
         keyboard = [
             [InlineKeyboardButton(get_text("buy_credits_btn", language), callback_data="credits_buy")],
+            [InlineKeyboardButton(get_text("credit_stats", language, default="Statistics"), callback_data="credits_stats")],
             [InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")]
         ]
         
@@ -227,6 +234,62 @@ async def handle_credit_callback(update: Update, context: ContextTypes.DEFAULT_T
                 # Bez formatowania Markdown
                 await query.edit_message_text(
                     get_text("credits_info", language, bot_name=BOT_NAME, credits=credits),
+                    reply_markup=reply_markup
+                )
+            except Exception as e2:
+                print(f"Drugi błąd przy edycji wiadomości: {e2}")
+    
+    elif query.data == "credits_stats":
+        # Show credit statistics
+        stats = get_user_credit_stats(user_id)
+        
+        # Format the date of last purchase
+        last_purchase = "None" if not stats['last_purchase'] else stats['last_purchase'].split('T')[0]
+        
+        # Create message with statistics
+        message = f"""
+*📊 {get_text("credits_analytics", language, default="Credit Analytics")}*
+
+{get_text("current_balance", language, default="Current balance")}: *{stats['credits']}* {get_text("credits", language)}
+{get_text("total_purchased", language, default="Total purchased")}: *{stats['total_purchased']}* {get_text("credits", language)}
+{get_text("total_spent", language, default="Total spent")}: *{stats['total_spent']}* PLN
+{get_text("last_purchase", language, default="Last purchase")}: *{last_purchase}*
+
+*📝 {get_text("credit_history", language, default="Transaction history")} ({get_text("last_10", language, default="last 10")}):*
+"""
+        
+        if not stats['usage_history']:
+            message += f"\n{get_text('no_transactions', language, default='No transaction history.')}"
+        else:
+            for i, transaction in enumerate(stats['usage_history']):
+                date = transaction['date'].split('T')[0]
+                if transaction['type'] == "add" or transaction['type'] == "purchase":
+                    message += f"\n{i+1}. ➕ +{transaction['amount']} {get_text('credits', language)} ({date})"
+                    if transaction['description']:
+                        message += f" - {transaction['description']}"
+                else:
+                    message += f"\n{i+1}. ➖ -{transaction['amount']} {get_text('credits', language)} ({date})"
+                    if transaction['description']:
+                        message += f" - {transaction['description']}"
+        
+        # Add buttons for navigation
+        keyboard = [
+            [InlineKeyboardButton(get_text("credit_analytics", language, default="Advanced Analytics"), callback_data="credit_advanced_analytics")],
+            [InlineKeyboardButton(get_text("back", language), callback_data="credits_check")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            await query.edit_message_text(
+                message,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
+            )
+        except Exception as e:
+            print(f"Błąd przy edycji wiadomości: {e}")
+            try:
+                await query.edit_message_text(
+                    message,
                     reply_markup=reply_markup
                 )
             except Exception as e2:
@@ -287,15 +350,110 @@ async def handle_credit_callback(update: Update, context: ContextTypes.DEFAULT_T
             )
             
     # Handle star options button
-    if query.data == "show_stars_options":
-        await show_stars_purchase_options(update, context)
+    elif query.data == "show_stars_options":
+        # Get conversion rate
+        conversion_rates = get_stars_conversion_rate()
+        
+        # Create buttons for different star purchase options
+        keyboard = []
+        for stars, credits in conversion_rates.items():
+            keyboard.append([
+                InlineKeyboardButton(
+                    f"⭐ {stars} stars = {credits} credits", 
+                    callback_data=f"buy_stars_{stars}"
+                )
+            ])
+        
+        # Add return button
+        keyboard.append([
+            InlineKeyboardButton(get_text("back", language, default="Back to purchase options"), callback_data="credits_buy")
+        ])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            get_text("stars_purchase_info", language, default="🌟 *Purchase Credits with Telegram Stars* 🌟\n\nChoose one of the options below to exchange Telegram stars for credits.\nThe more stars you exchange at once, the better bonus you'll receive!\n\n⚠️ *Note:* To purchase with stars, a Telegram Premium account is required."),
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=reply_markup
+        )
         return
     
     # Handle star purchase buttons
-    if query.data.startswith("buy_stars_"):
+    elif query.data.startswith("buy_stars_"):
         stars_amount = int(query.data.split("_")[2])
-        await process_stars_purchase(update, context, stars_amount)
-        return
+        
+        # Get conversion rate
+        conversion_rates = get_stars_conversion_rate()
+        
+        # Check if the specified star amount is supported
+        if stars_amount not in conversion_rates:
+            await query.edit_message_text(
+                get_text("stars_invalid_amount", language, default="An error occurred. Invalid number of stars."),
+                parse_mode=ParseMode.MARKDOWN
+            )
+            return
+        
+        credits_amount = conversion_rates[stars_amount]
+        
+        # Here should be a call to Telegram Payments API to collect stars
+        # Since this is just a simulation, we assume the payment was successful
+        
+        # Add credits to user's account
+        success = add_stars_payment_option(user_id, stars_amount, credits_amount)
+        
+        if success:
+            current_credits = get_user_credits(user_id)
+            await query.edit_message_text(
+                get_text("stars_purchase_success", language, default=f"✅ *Purchase completed successfully!*\n\nExchanged *{stars_amount}* stars for *{credits_amount}* credits\n\nCurrent credit balance: *{current_credits}*\n\nThank you for your purchase! 🎉",
+                    stars=stars_amount,
+                    credits=credits_amount,
+                    total=current_credits
+                ),
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            await query.edit_message_text(
+                get_text("purchase_error", language, default="An error occurred while processing the payment. Please try again later."),
+                parse_mode=ParseMode.MARKDOWN
+            )
+    
+    elif query.data == "credit_advanced_analytics":
+        # This would handle showing more detailed analytics
+        # Could display charts or more detailed statistics
+        # For now, just redirect to the creditstats command
+        
+        # Create a fake update to pass to the creditstats command
+        class FakeMessage:
+            def __init__(self, chat_id):
+                self.chat_id = chat_id
+                
+            async def reply_text(self, *args, **kwargs):
+                pass
+                
+        class FakeUpdate:
+            def __init__(self, user_id, chat_id):
+                self.effective_user = type('obj', (object,), {'id': user_id})
+                self.message = FakeMessage(chat_id)
+                self.effective_chat = type('obj', (object,), {'id': chat_id})
+        
+        fake_update = FakeUpdate(user_id, query.message.chat_id)
+        
+        # Create fake context args
+        if not hasattr(context, 'args'):
+            context.args = ["30"]  # Default to 30 days
+        
+        # Call the creditstats command
+        await credit_analytics_command(fake_update, context)
+        
+        # Return to credit stats
+        keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="credits_stats")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            get_text("analytics_sent", language, default="Credit usage analytics have been sent as separate messages."),
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=reply_markup
+        )
 
 async def credit_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """

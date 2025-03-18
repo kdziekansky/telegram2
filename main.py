@@ -408,7 +408,7 @@ async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             current_mode = get_text(f"chat_mode_{mode_id}", language, default=CHAT_MODES[mode_id]["name"])
             current_mode_cost = CHAT_MODES[mode_id]["credit_cost"]
     
-    # Stwórz wiadomość o statusie
+    # Stwórz wiadomość o statusie, używając tłumaczeń
     message = f"""
 *{get_text("status_command", language, bot_name=BOT_NAME)}*
 
@@ -1021,8 +1021,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             if credits < 5:
                 await context.bot.send_message(
                     chat_id=query.message.chat_id,
-                    text=f"*Uwaga:* Pozostało Ci tylko *{credits}* kredytów. "
-                    f"Kup więcej za pomocą komendy /buy.",
+                    text=f"*{get_text('low_credits_warning', language)}* {get_text('low_credits_message', language, credits=credits)}",
                     parse_mode=ParseMode.MARKDOWN
                 )
             
@@ -1246,7 +1245,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         context.chat_data['user_data'][user_id] = user_data
         
         # Potwierdź restart
-        restart_complete = "Bot został zrestartowany! Możesz teraz kontynuować korzystanie z niego."
+        restart_complete = get_text("restart_command", language)
         
         # Utwórz klawiaturę menu
         keyboard = [
@@ -1315,6 +1314,18 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
                 )
         return
     
+    # Obsługa notatek
+    if query.data.startswith("note_"):
+        from handlers.note_handler import handle_note_callback
+        await handle_note_callback(update, context)
+        return
+    
+    # Obsługa przypomnień  
+    if query.data.startswith("reminder_"):
+        from handlers.reminder_handler import handle_reminder_callback
+        await handle_reminder_callback(update, context)
+        return
+        
     # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
     print(f"Nieobsłużony callback: {query.data}")
     try:
@@ -1412,18 +1423,23 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
     user_id = query.from_user.id
     language = get_user_language(context, user_id)
     
+    print(f"Obsługiwanie wyboru trybu: {mode_id}")
+    
     # Sprawdź, czy tryb istnieje
     if mode_id not in CHAT_MODES:
-        if hasattr(query.message, 'caption'):
-            await query.edit_message_caption(
-                caption=get_text("model_not_available", language),
-                parse_mode=ParseMode.MARKDOWN
-            )
-        else:
-            await query.edit_message_text(
-                text=get_text("model_not_available", language),
-                parse_mode=ParseMode.MARKDOWN
-            )
+        try:
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("model_not_available", language),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("model_not_available", language),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+        except Exception as e:
+            print(f"Błąd przy edycji wiadomości: {e}")
         return
     
     # Zapisz wybrany tryb w kontekście użytkownika
@@ -1439,7 +1455,7 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
     if "model" in CHAT_MODES[mode_id]:
         context.chat_data['user_data'][user_id]['current_model'] = CHAT_MODES[mode_id]["model"]
     
-    # Użyj tłumaczenia zamiast bezpośredniej nazwy
+    # Pobierz przetłumaczoną nazwę trybu i inne informacje
     mode_name = get_text(f"chat_mode_{mode_id}", language, default=CHAT_MODES[mode_id]["name"])
     mode_description = CHAT_MODES[mode_id]["prompt"]
     credit_cost = CHAT_MODES[mode_id]["credit_cost"]
@@ -1450,7 +1466,7 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
     else:
         short_description = mode_description
     
-    # Użyj przetłumaczonych tekstów
+    # Używaj tłumaczeń zamiast hardcodowanych tekstów
     message_text = get_text("mode_selected_message", language, 
                           mode_name=mode_name,
                           credit_cost=credit_cost,
@@ -1463,20 +1479,42 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
         message_text += f"{get_text('description', language, default='Opis')}: _{short_description}_\n\n"
         message_text += f"{get_text('ask_question_now', language, default='Możesz teraz zadać pytanie w wybranym trybie.')}"
     
+    # Dodaj przyciski powrotu do menu trybów
+    keyboard = [
+        [InlineKeyboardButton(get_text("back", language), callback_data="menu_section_chat_modes")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
     try:
         # Sprawdź typ wiadomości i użyj odpowiedniej metody
         if hasattr(query.message, 'caption'):
             await query.edit_message_caption(
                 caption=message_text,
-                parse_mode=ParseMode.MARKDOWN
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
             )
         else:
             await query.edit_message_text(
                 text=message_text,
-                parse_mode=ParseMode.MARKDOWN
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
             )
     except Exception as e:
         print(f"Błąd przy edycji wiadomości: {e}")
+        try:
+            # Bez formatowania Markdown
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=message_text,
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.edit_message_text(
+                    text=message_text,
+                    reply_markup=reply_markup
+                )
+        except Exception as e2:
+            print(f"Drugi błąd przy edycji wiadomości: {e2}")
         
     # Utwórz nową konwersację dla wybranego trybu
     from database.sqlite_client import create_new_conversation
