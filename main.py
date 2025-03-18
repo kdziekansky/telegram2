@@ -1033,7 +1033,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
                 )
             return
     
-        # Obsługa przycisku tłumaczenia PDF
+    # Obsługa przycisku tłumaczenia PDF
     if query.data.startswith("translate_pdf_"):
         document_file_id = query.data.replace("translate_pdf_", "")
         user_id = query.from_user.id
@@ -1260,15 +1260,15 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         
         # Wyślij nową wiadomość z menu
         try:
+            # Używamy welcome_message zamiast main_menu + status
+            welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
             message = await context.bot.send_message(
                 chat_id=chat_id,
-                text=restart_complete + "\n\n" + get_text("welcome_message", language, bot_name=BOT_NAME),
+                text=restart_complete + "\n\n" + welcome_text,
                 reply_markup=reply_markup,
                 parse_mode=ParseMode.MARKDOWN
             )
             
-            # Zapisz ID wiadomości
-
             # Zapisz ID wiadomości menu i stan menu
             from handlers.menu_handler import store_menu_state
             store_menu_state(context, user_id, 'main', message.message_id)
@@ -1307,45 +1307,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
                 )
         return
     
-    # Obsługa przycisku powrotu do menu głównego
-    elif query.data == "menu_back_main":
-        # Powrót do głównego menu
-        keyboard = [
-            [
-                InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
-                InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
-            ],
-            [
-                InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
-                InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
-            ],
-            [
-                InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
-                InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        # Użycie welcome_message zamiast main_menu
-        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
-        
-        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
-        if hasattr(query.message, 'caption'):
-            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
-            await query.edit_message_caption(
-                caption=welcome_text,
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
-            )
-        else:
-            # Standardowa wiadomość tekstowa
-            await query.edit_message_text(
-                text=welcome_text,
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
-            )
-        return True
-        
     # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
     print(f"Nieobsłużony callback: {query.data}")
     try:
