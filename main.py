@@ -399,30 +399,31 @@ async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     credits = get_user_credits(user_id)
     
     # Pobranie aktualnego trybu czatu
-    current_mode = "brak" 
+    current_mode = get_text("no_mode", language)
     current_mode_cost = 1
     if 'user_data' in context.chat_data and user_id in context.chat_data['user_data']:
         user_data = context.chat_data['user_data'][user_id]
         if 'current_mode' in user_data and user_data['current_mode'] in CHAT_MODES:
-            current_mode = CHAT_MODES[user_data['current_mode']]["name"]
-            current_mode_cost = CHAT_MODES[user_data['current_mode']]["credit_cost"]
+            mode_id = user_data['current_mode']
+            current_mode = get_text(f"chat_mode_{mode_id}", language, default=CHAT_MODES[mode_id]["name"])
+            current_mode_cost = CHAT_MODES[mode_id]["credit_cost"]
     
     # Stwórz wiadomość o statusie
     message = f"""
-*Status twojego konta w {BOT_NAME}:*
+*{get_text("status_command", language, bot_name=BOT_NAME)}*
 
-Dostępne kredyty: *{credits}*
-Aktualny tryb: *{current_mode}* (koszt: {current_mode_cost} kredyt(ów) za wiadomość)
+{get_text("available_credits", language)}: *{credits}*
+{get_text("current_mode", language)}: *{current_mode}* ({get_text("cost", language)}: {current_mode_cost} {get_text("credits_per_message", language)})
 
-Koszty operacji:
-• Standardowa wiadomość (GPT-3.5): 1 kredyt
-• Wiadomość Premium (GPT-4o): 3 kredyty
-• Wiadomość Ekspercka (GPT-4): 5 kredytów
-• Obraz DALL-E: 10-15 kredytów
-• Analiza dokumentu: 5 kredytów
-• Analiza zdjęcia: 8 kredytów
+{get_text("operation_costs", language)}:
+- {get_text("standard_message", language)} (GPT-3.5): 1 {get_text("credit", language)}
+- {get_text("premium_message", language)} (GPT-4o): 3 {get_text("credits", language)}
+- {get_text("expert_message", language)} (GPT-4): 5 {get_text("credits", language)}
+- {get_text("dalle_image", language)}: 10-15 {get_text("credits", language)}
+- {get_text("document_analysis", language)}: 5 {get_text("credits", language)}
+- {get_text("photo_analysis", language)}: 8 {get_text("credits", language)}
 
-Aby dokupić więcej kredytów, użyj komendy /buy.
+{get_text("buy_more_credits", language)}: /buy.
 """
     
     await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN)

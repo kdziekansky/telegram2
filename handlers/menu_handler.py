@@ -4,6 +4,7 @@ from telegram.constants import ParseMode
 from config import CHAT_MODES, AVAILABLE_LANGUAGES, AVAILABLE_MODELS, CREDIT_COSTS, DEFAULT_MODEL, BOT_NAME
 from utils.translations import get_text
 from database.credits_client import get_user_credits
+from database.sqlite_client import update_user_language
 
 # Funkcje pomocnicze
 
@@ -241,29 +242,6 @@ async def update_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, menu_s
                 )
         except Exception as e2:
             print(f"Drugi błąd przy aktualizacji menu: {e2}")
-    
-    # Zapisz nowy stan menu
-    store_menu_state(context, user_id, menu_state)
-    
-    # Aktualizuj wiadomość menu
-    try:
-        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
-        if hasattr(query.message, 'caption'):
-            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
-            await query.edit_message_caption(
-                caption=menu_text,
-                reply_markup=markup,
-                parse_mode=ParseMode.MARKDOWN
-            )
-        else:
-            # Standardowa wiadomość tekstowa
-            await query.edit_message_text(
-                text=menu_text,
-                reply_markup=markup,
-                parse_mode=ParseMode.MARKDOWN
-            )
-    except Exception as e:
-        print(f"Błąd przy aktualizacji menu: {e}")
     
     # Zapisz nowy stan menu
     store_menu_state(context, user_id, menu_state)
@@ -517,7 +495,7 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         # Menu historii
         keyboard = [
             [InlineKeyboardButton(get_text("new_chat", language), callback_data="history_new")],
-            # Usunięty przycisk export conversation - zamiast tego instrukcja
+            [InlineKeyboardButton(get_text("view_history", language), callback_data="history_view")],
             [InlineKeyboardButton(get_text("delete_history", language), callback_data="history_delete")],
             [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
         ]
@@ -715,6 +693,68 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         except Exception as e:
             print(f"Błąd formatowania: {e}")
             # Próba wysłania bez formatowania Markdown
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=message_text,
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.edit_message_text(
+                    text=message_text,
+                    reply_markup=reply_markup
+                )
+        return True
+    
+    # Obsługa przeglądu historii
+    elif query.data == "history_view":
+        # Pobierz aktywną konwersację
+        from database.sqlite_client import get_active_conversation, get_conversation_history
+        conversation = get_active_conversation(user_id)
+        
+        if not conversation:
+            await query.answer(get_text("history_no_conversation", language))
+            return True
+        
+        # Pobierz historię konwersacji
+        history = get_conversation_history(conversation['id'])
+        
+        if not history:
+            await query.answer(get_text("history_empty", language))
+            return True
+        
+        # Przygotuj tekst z historią
+        message_text = f"*{get_text('history_title', language)}*\n\n"
+        
+        for i, msg in enumerate(history[-10:]):  # Ostatnie 10 wiadomości
+            sender = get_text("history_user", language) if msg['is_from_user'] else get_text("history_bot", language)
+            
+            # Skróć treść wiadomości, jeśli jest zbyt długa
+            content = msg['content']
+            if len(content) > 100:
+                content = content[:97] + "..."
+            
+            message_text += f"**{i+1}. {sender}:** {content}\n\n"
+        
+        # Dodaj przycisk do powrotu
+        keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="menu_section_history")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=message_text,
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=message_text,
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+        except Exception as e:
+            print(f"Błąd formatowania: {e}")
+            # Próba bez formatowania Markdown
             if hasattr(query.message, 'caption'):
                 await query.edit_message_caption(
                     caption=message_text,
