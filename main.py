@@ -94,7 +94,7 @@ async def onboarding_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Lista kroków onboardingu
     steps = [
         'welcome', 'chat', 'modes', 'images', 'analysis', 
-        'credits', 'export', 'themes', 'reminders', 'notes', 
+        'credits', 'referral', 'export', 'themes', 'reminders', 'notes', 
         'settings', 'finish'
     ]
     
@@ -130,22 +130,24 @@ def get_onboarding_image_url(step_name):
     """
     Zwraca URL obrazu dla danego kroku onboardingu
     """
-    # Mapowanie kroków do URL obrazów
+    # Mapowanie kroków do URL obrazów - każdy krok ma unikalny obraz
     images = {
-        'welcome': "https://i.imgur.com/YPubLDE.png",  # Obrazek powitalny (możesz podmienić na właściwy)
-        'chat': "https://i.imgur.com/YPubLDE.png",     # Obrazek dla czatu
-        'modes': "https://i.imgur.com/YPubLDE.png",    # Obrazek dla trybów czatu
-        'images': "https://i.imgur.com/YPubLDE.png",   # Obrazek dla generowania obrazów
-        'analysis': "https://i.imgur.com/YPubLDE.png", # Obrazek dla analizy dokumentów
-        'credits': "https://i.imgur.com/YPubLDE.png",  # Obrazek dla systemu kredytów
-        'export': "https://i.imgur.com/YPubLDE.png",   # Obrazek dla eksportu
-        'themes': "https://i.imgur.com/YPubLDE.png",   # Obrazek dla tematów
-        'reminders': "https://i.imgur.com/YPubLDE.png",# Obrazek dla przypomnień
-        'notes': "https://i.imgur.com/YPubLDE.png",    # Obrazek dla notatek
-        'settings': "https://i.imgur.com/YPubLDE.png", # Obrazek dla ustawień
-        'finish': "https://i.imgur.com/YPubLDE.png"    # Obrazek dla końca onboardingu
+        'welcome': "https://i.imgur.com/pPb7wfV.png",     # Obrazek powitalny
+        'chat': "https://i.imgur.com/L8SdPX1.png",        # Obrazek dla czatu z AI
+        'modes': "https://i.imgur.com/Z5n3cCo.png",       # Obrazek dla trybów czatu
+        'images': "https://i.imgur.com/Jwd3W0L.png",      # Obrazek dla generowania obrazów
+        'analysis': "https://i.imgur.com/7tD9MZq.png",    # Obrazek dla analizy dokumentów
+        'credits': "https://i.imgur.com/xE1uVJz.png",     # Obrazek dla systemu kredytów
+        'referral': "https://i.imgur.com/f3NZsH7.png",    # Obrazek dla programu referencyjnego
+        'export': "https://i.imgur.com/FvRMnKY.png",      # Obrazek dla eksportu
+        'themes': "https://i.imgur.com/BjHVLZy.png",      # Obrazek dla tematów
+        'reminders': "https://i.imgur.com/VqT5aQR.png",   # Obrazek dla przypomnień
+        'notes': "https://i.imgur.com/8wPNFkm.png",       # Obrazek dla notatek
+        'settings': "https://i.imgur.com/NcPwXcT.png",    # Obrazek dla ustawień
+        'finish': "https://i.imgur.com/YnL3VJT.png"       # Obrazek dla końca onboardingu
     }
     
+    # Użyj odpowiedniego obrazka dla danego kroku lub domyślnego, jeśli nie znaleziono
     return images.get(step_name, "https://i.imgur.com/YPubLDE.png")
 
 async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -364,69 +366,6 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e2:
             print(f"Błąd przy wysyłaniu wiadomości o błędzie: {e2}")
 
-async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Obsługa komendy /menu - wyświetla menu główne bota z przyciskami inline"""
-    user_id = update.effective_user.id
-    language = get_user_language(context, user_id)
-    
-    # Pobierz stan kredytów
-    credits = get_user_credits(user_id)
-    
-    # Pobierz aktualny tryb i model
-    current_mode = "brak"
-    current_model = DEFAULT_MODEL
-    if 'user_data' in context.chat_data and user_id in context.chat_data['user_data']:
-        user_data = context.chat_data['user_data'][user_id]
-        if 'current_mode' in user_data and user_data['current_mode'] in CHAT_MODES:
-            current_mode = CHAT_MODES[user_data['current_mode']]["name"]
-        if 'current_model' in user_data and user_data['current_model'] in AVAILABLE_MODELS:
-            current_model = AVAILABLE_MODELS[user_data['current_model']]
-    
-    # Utwórz klawiaturę menu
-    keyboard = [
-        [
-            InlineKeyboardButton("🔄 " + get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
-            InlineKeyboardButton("🖼️ " + get_text("image_generate", language), callback_data="menu_image_generate")
-        ],
-        [
-            InlineKeyboardButton("💰 " + get_text("menu_credits", language), callback_data="menu_section_credits"),
-            InlineKeyboardButton("📂 " + get_text("menu_dialog_history", language), callback_data="menu_section_history")
-        ],
-        [
-            InlineKeyboardButton("⚙️ " + get_text("menu_settings", language), callback_data="menu_section_settings"),
-            InlineKeyboardButton("❓ " + get_text("menu_help", language), callback_data="menu_help")
-        ]
-    ]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    # Utwórz tekst menu
-    menu_text = f"""{get_text('welcome_message', language, bot_name=BOT_NAME)}
-
-*{get_text('status', language)}:*
-{get_text('credits', language)}: *{credits}*
-{get_text('current_mode', language)}: *{current_mode}*
-{get_text('current_model', language)}: *{current_model}*
-
-{get_text('select_option', language)}"""
-    
-    # Wyślij menu
-    try:
-        message = await update.message.reply_text(
-            menu_text,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
-        
-        # Zapisz ID wiadomości menu i stan menu
-        store_menu_state(context, user_id, 'main', message.message_id)
-    except Exception as e:
-        print(f"Błąd przy wysyłaniu menu: {e}")
-        # Wyślij prostszą wersję bez formatowania w przypadku błędu
-        await update.message.reply_text(
-            f"Menu główne\n\nKredyty: {credits}\nTryb: {current_mode}\nModel: {current_model}\n\nWybierz opcję z menu poniżej:",
-            reply_markup=reply_markup
-        )
 
 async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -1583,7 +1522,6 @@ def main():
     application.add_handler(CommandHandler("mode", show_modes))
     application.add_handler(CommandHandler("image", generate_image))
     application.add_handler(CommandHandler("restart", restart_command))
-    application.add_handler(CommandHandler("menu", menu_command))
     application.add_handler(CommandHandler("setname", set_user_name))
     application.add_handler(CommandHandler("language", language_command))
 
