@@ -14,10 +14,11 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Obsługa wiadomości tekstowych od użytkownika ze strumieniowaniem odpowiedzi"""
     user_id = update.effective_user.id
     user_message = update.message.text
+    language = get_user_language(context, user_id)
     
     # Sprawdź, czy użytkownik ma dostępne wiadomości
     if not check_message_limit(user_id):
-        await update.message.reply_text(SUBSCRIPTION_EXPIRED_MESSAGE)
+        await update.message.reply_text(get_text("subscription_expired", language))
         return
     
     # Pobierz lub utwórz aktywną konwersację
@@ -51,7 +52,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     messages = prepare_messages_from_history(history, user_message, system_prompt)
     
     # Wyślij początkową pustą wiadomość, którą będziemy aktualizować
-    response_message = await update.message.reply_text("⏳ Generowanie odpowiedzi...")
+    response_message = await update.message.reply_text(get_text("generating_response", language))
     
     # Zainicjuj pełną odpowiedź
     full_response = ""
@@ -92,7 +93,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_status = get_message_status(user_id)
     if message_status["messages_left"] <= 5 and message_status["messages_left"] > 0:
         await update.message.reply_text(
-            f"*Uwaga:* Pozostało Ci tylko *{message_status['messages_left']}* wiadomości. "
-            f"Aktywuj nowy pakiet, aby kontynuować korzystanie z bota.",
+            get_text("low_credits_warning", language) + " " + 
+            get_text("low_credits_message", language, credits=message_status['messages_left']),
             parse_mode=ParseMode.MARKDOWN
         )

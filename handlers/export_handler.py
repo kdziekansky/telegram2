@@ -19,7 +19,7 @@ async def export_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     # Informuj użytkownika o rozpoczęciu procesu
     status_message = await update.message.reply_text(
-        "⏳ Generowanie pliku PDF z historią konwersacji..."
+        get_text("export_generating", language)
     )
     
     # Pokazuj animację "bot pisze"
@@ -29,14 +29,14 @@ async def export_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE
     conversation = get_active_conversation(user_id)
     
     if not conversation:
-        await status_message.edit_text("Nie znaleziono aktywnej konwersacji.")
+        await status_message.edit_text(get_text("conversation_error", language))
         return
     
     # Pobierz historię konwersacji
     history = get_conversation_history(conversation['id'])
     
     if not history:
-        await status_message.edit_text("Historia konwersacji jest pusta.")
+        await status_message.edit_text(get_text("export_empty", language))
         return
     
     # Pobierz dane użytkownika
@@ -56,7 +56,7 @@ async def export_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE
             chat_id=update.effective_chat.id,
             document=pdf_buffer,
             filename=file_name,
-            caption="📄 Historia konwersacji w formacie PDF"
+            caption=get_text("export_file_caption", language)
         )
         
         # Usuń wiadomość o statusie
@@ -65,5 +65,5 @@ async def export_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE
     except Exception as e:
         print(f"Błąd podczas generowania PDF: {e}")
         await status_message.edit_text(
-            "Wystąpił błąd podczas generowania pliku PDF. Spróbuj ponownie później."
+            get_text("export_error", language)
         )

@@ -328,7 +328,7 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         language = get_user_language(context, user_id)
         
         # Wyślij potwierdzenie restartu
-        restart_message = "Bot został zrestartowany pomyślnie."
+        restart_message = get_text("restart_command", language)
         
         # Utwórz klawiaturę menu
         keyboard = [
@@ -381,7 +381,7 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Używamy context.bot.send_message zamiast update.message.reply_text
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text="Wystąpił błąd podczas restartu bota. Spróbuj ponownie później."
+                text=get_text("restart_error", get_user_language(context, update.effective_user.id))
             )
         except Exception as e2:
             print(f"Błąd przy wysyłaniu wiadomości o błędzie: {e2}")
@@ -437,12 +437,12 @@ async def new_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if conversation:
         await update.message.reply_text(
-            "Rozpoczęto nową konwersację. Możesz teraz zadać pytanie.",
+            get_text("newchat_command", language),
             parse_mode=ParseMode.MARKDOWN
         )
     else:
         await update.message.reply_text(
-            "Wystąpił błąd podczas tworzenia nowej konwersacji.",
+            get_text("new_chat_error", language),
             parse_mode=ParseMode.MARKDOWN
         )
 
@@ -458,7 +458,7 @@ async def show_models(update: Update, context: ContextTypes.DEFAULT_TYPE, edit_m
         credit_cost = CREDIT_COSTS["message"].get(model_id, CREDIT_COSTS["message"]["default"])
         keyboard.append([
             InlineKeyboardButton(
-                text=f"{model_name} ({credit_cost} kredyt(ów))", 
+                text=f"{model_name} ({credit_cost} {get_text('credits_per_message', language)})", 
                 callback_data=f"model_{model_id}"
             )
         ])
@@ -467,12 +467,12 @@ async def show_models(update: Update, context: ContextTypes.DEFAULT_TYPE, edit_m
     
     if edit_message and callback_query:
         await callback_query.edit_message_text(
-            get_text("settings_choose_model", language),
+            get_text("models_command", language),
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text(
-            get_text("settings_choose_model", language),
+            get_text("models_command", language),
             reply_markup=reply_markup
         )
 

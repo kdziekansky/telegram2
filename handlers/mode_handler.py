@@ -48,9 +48,23 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
     user_id = query.from_user.id
     language = get_user_language(context, user_id)
     
+    print(f"Obsługiwanie wyboru trybu: {mode_id}")
+    
     # Sprawdź, czy tryb istnieje
     if mode_id not in CHAT_MODES:
-        await query.edit_message_text(get_text("model_not_available", language))
+        try:
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("model_not_available", language),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("model_not_available", language),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+        except Exception as e:
+            print(f"Błąd przy edycji wiadomości: {e}")
         return
     
     # Zapisz wybrany tryb w kontekście użytkownika
@@ -90,11 +104,29 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
         message_text += f"{get_text('description', language, default='Opis')}: _{short_description}_\n\n"
         message_text += f"{get_text('ask_question_now', language, default='Możesz teraz zadać pytanie w wybranym trybie.')}"
     
-    await query.edit_message_text(
-        text=message_text,
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
+    try:
+        # Sprawdź typ wiadomości i użyj odpowiedniej metody
+        if hasattr(query.message, 'caption'):
+            await query.edit_message_caption(
+                caption=message_text,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            await query.edit_message_text(
+                text=message_text,
+                parse_mode=ParseMode.MARKDOWN
+            )
+    except Exception as e:
+        print(f"Błąd przy edycji wiadomości: {e}")
+        try:
+            # Bez formatowania Markdown
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(caption=message_text)
+            else:
+                await query.edit_message_text(text=message_text)
+        except Exception as e2:
+            print(f"Drugi błąd przy edycji wiadomości: {e2}")
+        
     # Utwórz nową konwersację dla wybranego trybu
     from database.sqlite_client import create_new_conversation
     create_new_conversation(user_id)

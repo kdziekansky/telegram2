@@ -161,57 +161,141 @@ async def handle_credit_callback(update: Update, context: ContextTypes.DEFAULT_T
     user_id = query.from_user.id
     language = get_user_language(context, user_id)
     
-    if query.data == "buy_credits":
+    if query.data == "buy_credits" or query.data == "credits_buy" or query.data == "menu_credits_buy":
         # Redirect to the buy command
         packages = get_credit_packages()
         
         packages_text = ""
         for pkg in packages:
-            packages_text += f"*{pkg['id']}.* {pkg['name']} - *{pkg['credits']}* credits - *{pkg['price']} PLN*\n"
+            packages_text += f"*{pkg['id']}.* {pkg['name']} - *{pkg['credits']}* {get_text('credits', language)} - *{pkg['price']} PLN*\n"
         
         # Create buttons to buy credits
         keyboard = []
         for pkg in packages:
             keyboard.append([
                 InlineKeyboardButton(
-                    f"{pkg['name']} - {pkg['credits']} credits ({pkg['price']} PLN)", 
+                    f"{pkg['name']} - {pkg['credits']} {get_text('credits', language)} ({pkg['price']} PLN)", 
                     callback_data=f"buy_package_{pkg['id']}"
                 )
             ])
         
+        # Add button to go back to credits menu
+        keyboard.append([
+            InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")
+        ])
+        
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_text(
-            get_text("buy_credits", language, packages=packages_text),
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=reply_markup
-        )
+        try:
+            await query.edit_message_text(
+                get_text("buy_credits", language, packages=packages_text),
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
+            )
+        except Exception as e:
+            print(f"Błąd przy edycji wiadomości: {e}")
+            try:
+                # Bez formatowania Markdown
+                await query.edit_message_text(
+                    get_text("buy_credits", language, packages=packages_text),
+                    reply_markup=reply_markup
+                )
+            except Exception as e2:
+                print(f"Drugi błąd przy edycji wiadomości: {e2}")
+    
+    elif query.data == "credits_check":
+        # Show user's credit balance
+        credits = get_user_credits(user_id)
+        
+        # Create buttons for credit options
+        keyboard = [
+            [InlineKeyboardButton(get_text("buy_credits_btn", language), callback_data="credits_buy")],
+            [InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            await query.edit_message_text(
+                get_text("credits_info", language, bot_name=BOT_NAME, credits=credits),
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
+            )
+        except Exception as e:
+            print(f"Błąd przy edycji wiadomości: {e}")
+            try:
+                # Bez formatowania Markdown
+                await query.edit_message_text(
+                    get_text("credits_info", language, bot_name=BOT_NAME, credits=credits),
+                    reply_markup=reply_markup
+                )
+            except Exception as e2:
+                print(f"Drugi błąd przy edycji wiadomości: {e2}")
     
     elif query.data.startswith("buy_package_"):
         # Handle purchase of a specific package
         package_id = int(query.data.split("_")[2])
-        
-        user_id = query.from_user.id
         
         # Simulate credit purchase
         success, package = purchase_credits(user_id, package_id)
         
         if success and package:
             current_credits = get_user_credits(user_id)
-            await query.edit_message_text(
-                get_text("credit_purchase_success", language,
-                    package_name=package['name'],
-                    credits=package['credits'],
-                    price=package['price'],
-                    total_credits=current_credits
-                ),
-                parse_mode=ParseMode.MARKDOWN
-            )
+            
+            # Create buttons
+            keyboard = [
+                [InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits")],
+                [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            try:
+                await query.edit_message_text(
+                    get_text("credit_purchase_success", language,
+                        package_name=package['name'],
+                        credits=package['credits'],
+                        price=package['price'],
+                        total_credits=current_credits
+                    ),
+                    parse_mode=ParseMode.MARKDOWN,
+                    reply_markup=reply_markup
+                )
+            except Exception as e:
+                print(f"Błąd przy edycji wiadomości: {e}")
+                try:
+                    # Bez formatowania Markdown
+                    await query.edit_message_text(
+                        get_text("credit_purchase_success", language,
+                            package_name=package['name'],
+                            credits=package['credits'],
+                            price=package['price'],
+                            total_credits=current_credits
+                        ),
+                        reply_markup=reply_markup
+                    )
+                except Exception as e2:
+                    print(f"Drugi błąd przy edycji wiadomości: {e2}")
         else:
+            # Create button to go back
+            keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="credits_buy")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
             await query.edit_message_text(
-                "An error occurred while processing your purchase. Please try again or choose a different package.",
-                parse_mode=ParseMode.MARKDOWN
+                get_text("purchase_error", language),
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
             )
+            
+    # Handle star options button
+    if query.data == "show_stars_options":
+        await show_stars_purchase_options(update, context)
+        return
+    
+    # Handle star purchase buttons
+    if query.data.startswith("buy_stars_"):
+        stars_amount = int(query.data.split("_")[2])
+        await process_stars_purchase(update, context, stars_amount)
+        return
 
 async def credit_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """

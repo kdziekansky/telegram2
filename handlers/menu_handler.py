@@ -284,9 +284,16 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         # Utworzenie menu trybów czatu
         keyboard = []
         for mode_id, mode_info in CHAT_MODES.items():
+            # Pobierz przetłumaczoną nazwę trybu
+            mode_name = get_text(f"chat_mode_{mode_id}", language, default=mode_info['name'])
+            # Pobierz przetłumaczony tekst dla kredytów
+            credit_text = get_text("credit", language, default="kredyt")
+            if mode_info['credit_cost'] != 1:
+                credit_text = get_text("credits", language, default="kredytów")
+            
             keyboard.append([
                 InlineKeyboardButton(
-                    mode_info['name'], 
+                    f"{mode_name} ({mode_info['credit_cost']} {credit_text})", 
                     callback_data=f"mode_{mode_id}"
                 )
             ])
@@ -370,6 +377,102 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
                     reply_markup=reply_markup
                 )
         return True
+    
+    # DODANA OBSŁUGA MODEL I LANGUAGE W SETTINGS
+    elif query.data == "settings_model":
+        # Menu wyboru modelu AI
+        keyboard = []
+        for model_id, model_name in AVAILABLE_MODELS.items():
+            # Dodaj informację o koszcie kredytów
+            credit_cost = CREDIT_COSTS["message"].get(model_id, CREDIT_COSTS["message"]["default"])
+            keyboard.append([
+                InlineKeyboardButton(
+                    text=f"{model_name} ({credit_cost} {get_text('credits_per_message', language)})", 
+                    callback_data=f"model_{model_id}"
+                )
+            ])
+        
+        # Dodaj przycisk powrotu
+        keyboard.append([
+            InlineKeyboardButton(get_text("back", language), callback_data="menu_section_settings")
+        ])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("settings_choose_model", language),
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("settings_choose_model", language),
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+        except Exception as e:
+            print(f"Błąd formatowania: {e}")
+            # Próba bez formatowania Markdown
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("settings_choose_model", language),
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("settings_choose_model", language),
+                    reply_markup=reply_markup
+                )
+        return True
+        
+    elif query.data == "settings_language":
+        # Menu wyboru języka
+        keyboard = []
+        for lang_code, lang_name in AVAILABLE_LANGUAGES.items():
+            keyboard.append([
+                InlineKeyboardButton(
+                    lang_name, 
+                    callback_data=f"start_lang_{lang_code}"
+                )
+            ])
+        
+        # Dodaj przycisk powrotu
+        keyboard.append([
+            InlineKeyboardButton(get_text("back", language), callback_data="menu_section_settings")
+        ])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("settings_choose_language", language),
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("settings_choose_language", language),
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+        except Exception as e:
+            print(f"Błąd formatowania: {e}")
+            # Próba bez formatowania Markdown
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("settings_choose_language", language),
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("settings_choose_language", language),
+                    reply_markup=reply_markup
+                )
+        return True
+    
         
     elif query.data == "menu_image_generate":
         # Menu generowania obrazów
@@ -411,46 +514,46 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         return True
         
     elif query.data == "menu_section_history":
-        # Menu historii
-        keyboard = [
-            [InlineKeyboardButton(get_text("new_chat", language), callback_data="history_new")],
-            [InlineKeyboardButton(get_text("export_conversation", language), callback_data="history_export")],
-            [InlineKeyboardButton(get_text("delete_history", language), callback_data="history_delete")],
-            [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        message_text = get_text("history_options", language)
-        
-        try:
-            # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
-            if hasattr(query.message, 'caption'):
-                # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
-                await query.edit_message_caption(
-                    caption=message_text,
-                    reply_markup=reply_markup,
-                    parse_mode=ParseMode.MARKDOWN
-                )
-            else:
-                # Standardowa wiadomość tekstowa
-                await query.edit_message_text(
-                    text=message_text,
-                    reply_markup=reply_markup,
-                    parse_mode=ParseMode.MARKDOWN
-                )
-        except Exception as e:
-            print(f"Błąd formatowania: {e}")
-            # Próba wysłania bez formatowania Markdown
-            if hasattr(query.message, 'caption'):
-                await query.edit_message_caption(
-                    caption=message_text,
-                    reply_markup=reply_markup
-                )
-            else:
-                await query.edit_message_text(
-                    text=message_text,
-                    reply_markup=reply_markup
-                )
-        return True
+    # Menu historii
+    keyboard = [
+        [InlineKeyboardButton(get_text("new_chat", language), callback_data="history_new")],
+        # Usunięty przycisk export conversation - zamiast tego instrukcja
+        [InlineKeyboardButton(get_text("delete_history", language), callback_data="history_delete")],
+        [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    message_text = get_text("history_options", language) + "\n\n" + get_text("export_info", language, default="Aby wyeksportować konwersację, użyj komendy /export")
+    
+    try:
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+    except Exception as e:
+        print(f"Błąd formatowania: {e}")
+        # Próba wysłania bez formatowania Markdown
+        if hasattr(query.message, 'caption'):
+            await query.edit_message_caption(
+                caption=message_text,
+                reply_markup=reply_markup
+            )
+        else:
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup
+            )
+    return True
         
     elif query.data == "menu_section_settings":
         # Menu ustawień - NOWE ZMODYFIKOWANE MENU
@@ -626,6 +729,7 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     
     # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
     return False
+
 
 async def set_user_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """

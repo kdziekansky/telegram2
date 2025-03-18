@@ -174,7 +174,7 @@ translations = {
         
         # Do informacji i pomocy
         "subscription_expired": "Nie masz wystarczającej liczby kredytów, aby wykonać tę operację. \n\nKup kredyty za pomocą komendy /buy lub sprawdź swoje saldo za pomocą komendy /credits.",
-        "help_text": "*Pomoc i informacje*\n\n*Dostępne komendy:*\n/start - Rozpocznij korzystanie z bota\n/credits - Sprawdź saldo kredytów i kup więcej\n/buy - Kup pakiet kredytów\n/status - Sprawdź stan konta\n/newchat - Rozpocznij nową konwersację\n/mode - Wybierz tryb czatu\n/image [opis] - Wygeneruj obraz\n/restart - Odśwież informacje o bocie\n/menu - Pokaż to menu\n/code [kod] - Aktywuj kod promocyjny\n\n*Używanie bota:*\n1. Po prostu wpisz wiadomość, aby otrzymać odpowiedź\n2. Użyj przycisków menu, aby uzyskać dostęp do funkcji\n3. Możesz przesyłać zdjęcia i dokumenty do analizy\n\n*Wsparcie:*\nJeśli potrzebujesz pomocy, skontaktuj się z nami: @twoj_kontakt_wsparcia",
+        "help_text": "*Pomoc i informacje*\n\n*Dostępne komendy:*\n/start - Rozpocznij korzystanie z bota\n/credits - Sprawdź saldo kredytów i kup więcej\n/buy - Kup pakiet kredytów\n/status - Sprawdź stan konta\n/newchat - Rozpocznij nową konwersację\n/mode - Wybierz tryb czatu\n/image [opis] - Wygeneruj obraz\n/restart - Odśwież informacje o bocie\n/start - Pokaż to menu\n/code [kod] - Aktywuj kod promocyjny\n\n*Używanie bota:*\n1. Po prostu wpisz wiadomość, aby otrzymać odpowiedź\n2. Użyj przycisków menu, aby uzyskać dostęp do funkcji\n3. Możesz przesyłać zdjęcia i dokumenty do analizy\n\n*Wsparcie:*\nJeśli potrzebujesz pomocy, skontaktuj się z nami: @mypremiumsupport_bot",
         "low_credits_warning": "Uwaga:",
         "low_credits_message": "Pozostało Ci tylko *{credits}* kredytów. Kup więcej za pomocą komendy /buy.",
         
@@ -189,8 +189,8 @@ translations = {
         "onboarding_themes": "📑 **Tematy konwersacji**\n\nOrganizuj swoje rozmowy w tematyczne wątki. Każdy temat tworzy osobną konwersację.\n\n**Dostępne komendy:**\n/theme - Zarządzaj tematami\n/theme [nazwa] - Utwórz nowy temat\n/notheme - Przełącz na rozmowę bez tematu",
         "onboarding_reminders": "⏰ **Przypomnienia**\n\nBot może ustawić dla Ciebie przypomnienia o określonych porach.\n\n**Dostępne komendy:**\n/remind [czas] [treść] - Ustaw przypomnienie\n/reminders - Pokaż listę przypomnień",
         "onboarding_notes": "📝 **Notatki**\n\nZapisuj ważne informacje jako notatki i łatwo je odnajduj.\n\n**Dostępne komendy:**\n/note [tytuł] [treść] - Utwórz notatkę\n/notes - Pokaż listę notatek",
-        "onboarding_settings": "⚙️ **Ustawienia i personalizacja**\n\nDostosuj bota do swoich preferencji.\n\n**Dostępne komendy:**\n/menu - Otwórz menu główne\n/language - Zmień język\n/setname - Ustaw swoją nazwę\n/restart - Zrestartuj bota",
-        "onboarding_finish": "🎉 **Gratulacje!**\n\nZakończyłeś przewodnik po funkcjach bota {bot_name}. Teraz znasz już wszystkie możliwości, które oferuje nasz bot!\n\nJeśli masz jakiekolwiek pytania, użyj komendy /menu, aby otworzyć menu główne lub po prostu zapytaj bota.\n\nMiłego korzystania! 🚀",
+        "onboarding_settings": "⚙️ **Ustawienia i personalizacja**\n\nDostosuj bota do swoich preferencji.\n\n**Dostępne komendy:**\n/start - Otwórz menu główne\n/language - Zmień język\n/setname - Ustaw swoją nazwę\n/restart - Zrestartuj bota",
+        "onboarding_finish": "🎉 **Gratulacje!**\n\nZakończyłeś przewodnik po funkcjach bota {bot_name}. Teraz znasz już wszystkie możliwości, które oferuje nasz bot!\n\nJeśli masz jakiekolwiek pytania, użyj komendy /start, aby otworzyć menu główne lub po prostu zapytaj bota.\n\nMiłego korzystania! 🚀",
         "onboarding_next": "Dalej ➡️",
         "onboarding_back": "⬅️ Wstecz",
         "onboarding_finish_button": "🏁 Zakończ przewodnik",
@@ -245,6 +245,27 @@ translations = {
         "description": "Opis",
         "ask_question_now": "Możesz teraz zadać pytanie w wybranym trybie.",
         "mode_selected_message": "Wybrany tryb: *{mode_name}*\nKoszt: *{credit_cost}* kredyt(ów) za wiadomość\n\nOpis: _{description}_\n\nMożesz teraz zadać pytanie w wybranym trybie.",
+   
+        # Polski (pl)
+        "status_command": "Status twojego konta w {bot_name}",
+        "newchat_command": "Rozpoczęto nową rozmowę. Możesz teraz zadać pytanie.",
+        "restart_command": "Bot został zrestartowany pomyślnie.",
+        "models_command": "Wybierz model AI do używania:",
+        "translate_command": "Użyj tej komendy z przesłanym zdjęciem, aby przetłumaczyć tekst.",
+        "theme_command": "Zarządzaj tematami konwersacji:",
+        "total_purchased": "Łącznie zakupiono",
+        "total_spent": "Łącznie wydano",
+        "last_purchase": "Ostatni zakup",
+        "no_transactions": "Brak historii transakcji.",
+
+        # Polski
+        "export_info": "Aby wyeksportować konwersację do pliku PDF, użyj komendy /export",
+        "export_generating": "⏳ Generowanie pliku PDF z historią konwersacji...",
+        "export_empty": "Historia konwersacji jest pusta.",
+        "export_error": "Wystąpił błąd podczas generowania pliku PDF. Spróbuj ponownie później.",
+        "export_file_caption": "📄 Historia konwersacji w formacie PDF",
+
+
     },
     
     "en": {
@@ -419,7 +440,7 @@ translations = {
         
         # Do informacji i pomocy
         "subscription_expired": "You don't have enough credits to perform this operation. \n\nBuy credits using the /buy command or check your balance using the /credits command.",
-        "help_text": "*Help and Information*\n\n*Available commands:*\n/start - Start using the bot\n/credits - Check credit balance and buy more\n/buy - Buy credit package\n/status - Check account status\n/newchat - Start a new conversation\n/mode - Choose chat mode\n/image [description] - Generate an image\n/restart - Refresh bot information\n/menu - Show this menu\n/code [code] - Activate promotional code\n\n*Using the bot:*\n1. Simply type a message to get a response\n2. Use the menu buttons to access features\n3. You can upload photos and documents for analysis\n\n*Support:*\nIf you need help, contact us: @twoj_kontakt_wsparcia",
+        "help_text": "*Help and Information*\n\n*Available commands:*\n/start - Start using the bot\n/credits - Check credit balance and buy more\n/buy - Buy credit package\n/status - Check account status\n/newchat - Start a new conversation\n/mode - Choose chat mode\n/image [description] - Generate an image\n/restart - Refresh bot information\n/start - Show this menu\n/code [code] - Activate promotional code\n\n*Using the bot:*\n1. Simply type a message to get a response\n2. Use the menu buttons to access features\n3. You can upload photos and documents for analysis\n\n*Support:*\nIf you need help, contact us: @mypremiumsupport_bot",
         "low_credits_warning": "Warning:",
         "low_credits_message": "You only have *{credits}* credits left. Buy more using the /buy command.",
         
@@ -434,8 +455,8 @@ translations = {
         "onboarding_themes": "📑 **Conversation Themes**\n\nOrganize your conversations into thematic threads. Each theme creates a separate conversation.\n\n**Available commands:**\n/theme - Manage themes\n/theme [name] - Create a new theme\n/notheme - Switch to themeless conversation",
         "onboarding_reminders": "⏰ **Reminders**\n\nThe bot can set reminders for you at specific times.\n\n**Available commands:**\n/remind [time] [content] - Set a reminder\n/reminders - Show reminder list",
         "onboarding_notes": "📝 **Notes**\n\nSave important information as notes and easily find them later.\n\n**Available commands:**\n/note [title] [content] - Create a note\n/notes - Show notes list",
-        "onboarding_settings": "⚙️ **Settings and Personalization**\n\nCustomize the bot to your preferences.\n\n**Available commands:**\n/menu - Open main menu\n/language - Change language\n/setname - Set your name\n/restart - Restart the bot",
-        "onboarding_finish": "🎉 **Congratulations!**\n\nYou've completed the {bot_name} feature guide. Now you know all the capabilities our bot offers!\n\nIf you have any questions, use the /menu command to open the main menu or simply ask the bot.\n\nEnjoy using it! 🚀",
+        "onboarding_settings": "⚙️ **Settings and Personalization**\n\nCustomize the bot to your preferences.\n\n**Available commands:**\n/start - Open main menu\n/language - Change language\n/setname - Set your name\n/restart - Restart the bot",
+        "onboarding_finish": "🎉 **Congratulations!**\n\nYou've completed the {bot_name} feature guide. Now you know all the capabilities our bot offers!\n\nIf you have any questions, use the /start command to open the main menu or simply ask the bot.\n\nEnjoy using it! 🚀",
         "onboarding_next": "Next ➡️",
         "onboarding_back": "⬅️ Back",
         "onboarding_finish_button": "🏁 Finish guide",
@@ -490,6 +511,26 @@ translations = {
         "description": "Description",
         "ask_question_now": "You can now ask a question in the selected mode.",
         "mode_selected_message": "Selected mode: *{mode_name}*\nCost: *{credit_cost}* credit(s) per message\n\nDescription: _{description}_\n\nYou can now ask a question in the selected mode.",
+    
+        # Angielski (en)
+        "status_command": "Status of your account in {bot_name}",
+        "newchat_command": "New conversation started. You can now ask a question.",
+        "restart_command": "Bot has been successfully restarted.",
+        "models_command": "Choose an AI model to use:",
+        "translate_command": "Use this command with an uploaded photo to translate text.",
+        "theme_command": "Manage conversation themes:",
+        "total_purchased": "Total purchased",
+        "total_spent": "Total spent",
+        "last_purchase": "Last purchase",
+        "no_transactions": "No transaction history.",
+
+        # Angielski (en)
+        "export_info": "To export your conversation to a PDF file, use the /export command",
+        "export_generating": "⏳ Generating PDF file with conversation history...",
+        "export_empty": "Conversation history is empty.",
+        "export_error": "An error occurred while generating the PDF file. Please try again later.",
+        "export_file_caption": "📄 Conversation history in PDF format",
+
     },
     
     "ru": {
@@ -664,7 +705,7 @@ translations = {
         
         # Do informacji i pomocy
         "subscription_expired": "У вас недостаточно кредитов для выполнения этой операции. \n\nКупите кредиты с помощью команды /buy или проверьте свой баланс с помощью команды /credits.",
-        "help_text": "*Помощь и информация*\n\n*Доступные команды:*\n/start - Начать использование бота\n/credits - Проверить баланс кредитов и купить больше\n/buy - Купить пакет кредитов\n/status - Проверить статус аккаунта\n/newchat - Начать новый разговор\n/mode - Выбрать режим чата\n/image [описание] - Сгенерировать изображение\n/restart - Обновить информацию о боте\n/menu - Показать это меню\n/code [код] - Активировать промокод\n\n*Использование бота:*\n1. Просто введите сообщение, чтобы получить ответ\n2. Используйте кнопки меню для доступа к функциям\n3. Вы можете загружать фотографии и документы для анализа\n\n*Поддержка:*\nЕсли вам нужна помощь, свяжитесь с нами: @twoj_kontakt_wsparcia",
+        "help_text": "*Помощь и информация*\n\n*Доступные команды:*\n/start - Начать использование бота\n/credits - Проверить баланс кредитов и купить больше\n/buy - Купить пакет кредитов\n/status - Проверить статус аккаунта\n/newchat - Начать новый разговор\n/mode - Выбрать режим чата\n/image [описание] - Сгенерировать изображение\n/restart - Обновить информацию о боте\n/start - Показать это меню\n/code [код] - Активировать промокод\n\n*Использование бота:*\n1. Просто введите сообщение, чтобы получить ответ\n2. Используйте кнопки меню для доступа к функциям\n3. Вы можете загружать фотографии и документы для анализа\n\n*Поддержка:*\nЕсли вам нужна помощь, свяжитесь с нами: @mypremiumsupport_bot",
         "low_credits_warning": "Внимание:",
         "low_credits_message": "У вас осталось только *{credits}* кредитов. Купите больше с помощью команды /buy.",
         
@@ -679,8 +720,8 @@ translations = {
         "onboarding_themes": "📑 **Темы бесед**\n\nОрганизуйте свои разговоры в тематические ветки. Каждая тема создает отдельный разговор.\n\n**Доступные команды:**\n/theme - Управление темами\n/theme [название] - Создать новую тему\n/notheme - Переключиться на разговор без темы",
         "onboarding_reminders": "⏰ **Напоминания**\n\nБот может устанавливать для вас напоминания в определенное время.\n\n**Доступные команды:**\n/remind [время] [содержание] - Установить напоминание\n/reminders - Показать список напоминаний",
         "onboarding_notes": "📝 **Заметки**\n\nСохраняйте важную информацию в виде заметок и легко находите их позднее.\n\n**Доступные команды:**\n/note [заголовок] [содержание] - Создать заметку\n/notes - Показать список заметок",
-        "onboarding_settings": "⚙️ **Настройки и персонализация**\n\nНастройте бота под свои предпочтения.\n\n**Доступные команды:**\n/menu - Открыть главное меню\n/language - Изменить язык\n/setname - Установить свое имя\n/restart - Перезапустить бота",
-        "onboarding_finish": "🎉 **Поздравляем!**\n\nВы завершили руководство по функциям бота {bot_name}. Теперь вы знаете все возможности, которые предлагает наш бот!\n\nЕсли у вас есть вопросы, используйте команду /menu, чтобы открыть главное меню, или просто спросите бота.\n\nПриятного использования! 🚀",
+        "onboarding_settings": "⚙️ **Настройки и персонализация**\n\nНастройте бота под свои предпочтения.\n\n**Доступные команды:**\n/start - Открыть главное меню\n/language - Изменить язык\n/setname - Установить свое имя\n/restart - Перезапустить бота",
+        "onboarding_finish": "🎉 Поздравляем!\n\nВы завершили руководство по функциям бота {bot_name}. Теперь вы знаете все возможности, которые предлагает наш бот!\n\nЕсли у вас есть вопросы, используйте команду /start, чтобы открыть главное меню, или просто спросите бота.\n\nПриятного использования! 🚀",
         "onboarding_next": "Далее ➡️",
         "onboarding_back": "⬅️ Назад",
         "onboarding_finish_button": "🏁 Завершить руководство",
@@ -735,6 +776,26 @@ translations = {
         "description": "Описание",
         "ask_question_now": "Теперь вы можете задать вопрос в выбранном режиме.",
         "mode_selected_message": "Выбранный режим: *{mode_name}*\nСтоимость: *{credit_cost}* кредит(ов) за сообщение\n\nОписание: _{description}_\n\nТеперь вы можете задать вопрос в выбранном режиме.",
+    
+
+        # Rosyjski (ru)
+        "status_command": "Статус вашего аккаунта в {bot_name}",
+        "newchat_command": "Новый разговор начат. Теперь вы можете задать вопрос.",
+        "restart_command": "Бот был успешно перезапущен.",
+        "models_command": "Выберите модель ИИ для использования:",
+        "translate_command": "Используйте эту команду с загруженным фото для перевода текста.",
+        "theme_command": "Управление темами разговора:",
+        "total_purchased": "Всего приобретено",
+        "total_spent": "Всего потрачено",
+        "last_purchase": "Последняя покупка",
+        "no_transactions": "Нет истории транзакций.",
+
+        # Rosyjski (ru)
+        "export_info": "Чтобы экспортировать разговор в файл PDF, используйте команду /export",
+        "export_generating": "⏳ Создание PDF-файла с историей разговора...",
+        "export_empty": "История разговора пуста.",
+        "export_error": "Произошла ошибка при создании файла PDF. Пожалуйста, повторите попытку позже.",
+        "export_file_caption": "📄 История разговора в формате PDF"
     }
 }
 
