@@ -915,19 +915,18 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         return
     
     if query.data.startswith("mode_"):
-    print(f"Rozpoznano callback trybu: {query.data}")
-    mode_id = query.data[5:]  # Pobierz ID trybu (usuń prefix "mode_")
-    try:
-        await handle_mode_selection(update, context, mode_id)
-        return
-    except Exception as e:
-        print(f"Błąd w obsłudze trybu: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        # Wyślij informację o błędzie
-        await query.answer(f"Błąd: {str(e)}")
-        return
-
+        print(f"Rozpoznano callback trybu: {query.data}")
+        mode_id = query.data[5:]  # Pobierz ID trybu (usuń prefix "mode_")
+        try:
+            await handle_mode_selection(update, context, mode_id)
+            return
+        except Exception as e:
+            print(f"Błąd w obsłudze trybu: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # Wyślij informację o błędzie
+            await query.answer(f"Błąd: {str(e)}")
+            return
 
     # Obsługa tematów konwersacji
     if query.data.startswith("theme_") or query.data == "new_theme" or query.data == "no_theme":
@@ -1544,6 +1543,9 @@ def main():
     
     # Następnie dodaj handler dla tej komendy w funkcji main():
     application.add_handler(CommandHandler("help", help_command))
+
+    # Handler dla setname
+    application.add_handler(CommandHandler("setname", set_user_name))
 
     # Podstawowe komendy - USUNIĘTY handler removekeyboard
     application.add_handler(CommandHandler("start", start_command))

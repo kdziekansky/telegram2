@@ -396,10 +396,12 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         return True
         
     elif query.data == "menu_section_settings":
-        # Menu ustawień
+        # Menu ustawień - NOWE ZMODYFIKOWANE MENU
         keyboard = [
             [InlineKeyboardButton(get_text("settings_model", language), callback_data="settings_model")],
             [InlineKeyboardButton(get_text("settings_language", language), callback_data="settings_language")],
+            [InlineKeyboardButton(get_text("settings_name", language), callback_data="settings_name")],
+            [InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits")],
             [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -494,39 +496,30 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
                 parse_mode=ParseMode.MARKDOWN
             )
         return True
+
+    # NOWA OPCJA - obsługa przycisku zmiany nazwy
+    elif query.data == "settings_name":
+        # Menu zmiany nazwy użytkownika
+        message_text = get_text("settings_change_name", language, default="Aby zmienić swoją nazwę, użyj komendy /setname [twoja_nazwa].\n\nNa przykład: /setname Jan Kowalski")
+        keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="menu_section_settings")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+        if hasattr(query.message, 'caption'):
+            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+            await query.edit_message_caption(
+                caption=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            # Standardowa wiadomość tekstowa
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        return True
     
     # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
     return False
-
-async def set_user_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Ustawia niestandardową nazwę użytkownika
-    Użycie: /setname [nazwa]
-    """
-    user_id = update.effective_user.id
-    language = get_user_language(context, user_id)
-    
-    # Sprawdź, czy podano nazwę
-    if not context.args or len(' '.join(context.args)) < 1:
-        await update.message.reply_text(get_text("settings_change_name", language))
-        return
-    
-    name = ' '.join(context.args)
-    
-    # Zapisz nazwę w kontekście użytkownika
-    if 'user_data' not in context.chat_data:
-        context.chat_data['user_data'] = {}
-    
-    if user_id not in context.chat_data['user_data']:
-        context.chat_data['user_data'][user_id] = {}
-    
-    context.chat_data['user_data'][user_id]['custom_name'] = name
-    
-    # Wyślij potwierdzenie z przyciskiem menu
-    keyboard = [[InlineKeyboardButton("📋 " + get_text("menu", language, default="Menu"), callback_data="menu_back_main")]]
-    
-    await update.message.reply_text(
-        f"{get_text('name_changed', language, default='Twoja nazwa została zmieniona na')}: *{name}*",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode=ParseMode.MARKDOWN
-    )

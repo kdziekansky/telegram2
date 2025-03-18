@@ -211,7 +211,7 @@ translations = {
         "subscription_expired_short": "Niewystarczająca liczba kredytów",
         "translate_first_paragraph": "Przetłumacz pierwszy akapit",
         "translation_to_english": "Tłumaczenie na angielski",
-        "translation_complete": "Tłumaczenie zakończone"
+        "translation_complete": "Tłumaczenie zakończone",
 
         # /modes czatu
         "chat_mode_no_mode": "🔄 Brak trybu",
@@ -230,6 +230,16 @@ translations = {
         "chat_mode_nutritionist": "🥗 Dietetyk",
         "chat_mode_fitness_coach": "💪 Trener Fitness",
         "chat_mode_career_advisor": "👔 Doradca Kariery",
+
+        # Polski (pl)
+        "settings_name": "👤 Zmień swoją nazwę",
+        "settings_change_name": "Aby zmienić swoją nazwę, użyj komendy /setname [twoja_nazwa].\n\nNa przykład: /setname Jan Kowalski",
+        "name_changed": "Twoja nazwa została zmieniona na",
+        "credits_management": "💰 Zarządzanie kredytami",
+        "current_balance": "Aktualny stan kredytów",
+        "buy_more_credits": "Kup więcej kredytów",
+        "credit_history": "Historia transakcji",
+        "credits_analytics": "Analiza wykorzystania kredytów",
     },
     
     "en": {
@@ -440,7 +450,7 @@ translations = {
         "subscription_expired_short": "Insufficient credits",
         "translate_first_paragraph": "Translate first paragraph",
         "translation_to_english": "English translation",
-        "translation_complete": "Translation complete"
+        "translation_complete": "Translation complete",
 
         # /modes czatu
         "chat_mode_no_mode": "🔄 No Mode",
@@ -459,6 +469,16 @@ translations = {
         "chat_mode_nutritionist": "🥗 Nutritionist",
         "chat_mode_fitness_coach": "💪 Fitness Coach",
         "chat_mode_career_advisor": "👔 Career Advisor",
+
+        # Angielski (en)
+        "settings_name": "👤 Change your name",
+        "settings_change_name": "To change your name, use the command /setname [your_name].\n\nFor example: /setname John Smith",
+        "name_changed": "Your name has been changed to",
+        "credits_management": "💰 Credits Management",
+        "current_balance": "Current credit balance",
+        "buy_more_credits": "Buy more credits",
+        "credit_history": "Transaction history",
+        "credits_analytics": "Credit usage analytics",
     },
     
     "ru": {
@@ -669,7 +689,7 @@ translations = {
         "subscription_expired_short": "Недостаточно кредитов",
         "translate_first_paragraph": "Перевести первый абзац",
         "translation_to_english": "Перевод на английский",
-        "translation_complete": "Перевод завершен"
+        "translation_complete": "Перевод завершен",
 
         # /modes czatu
         "chat_mode_no_mode": "🔄 Без режима",
@@ -688,6 +708,16 @@ translations = {
         "chat_mode_nutritionist": "🥗 Диетолог",
         "chat_mode_fitness_coach": "💪 Фитнес-тренер",
         "chat_mode_career_advisor": "👔 Карьерный Консультант",
+
+        # Rosyjski (ru)
+        "settings_name": "👤 Изменить ваше имя",
+        "settings_change_name": "Чтобы изменить ваше имя, используйте команду /setname [ваше_имя].\n\nНапример: /setname Иван Петров",
+        "name_changed": "Ваше имя было изменено на",
+        "credits_management": "💰 Управление кредитами",
+        "current_balance": "Текущий баланс кредитов",
+        "buy_more_credits": "Купить больше кредитов",
+        "credit_history": "История транзакций",
+        "credits_analytics": "Аналитика использования кредитов",
     }
 }
 
