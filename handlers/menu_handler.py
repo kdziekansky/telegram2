@@ -514,46 +514,46 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         return True
         
     elif query.data == "menu_section_history":
-    # Menu historii
-    keyboard = [
-        [InlineKeyboardButton(get_text("new_chat", language), callback_data="history_new")],
-        # Usunięty przycisk export conversation - zamiast tego instrukcja
-        [InlineKeyboardButton(get_text("delete_history", language), callback_data="history_delete")],
-        [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    message_text = get_text("history_options", language) + "\n\n" + get_text("export_info", language, default="Aby wyeksportować konwersację, użyj komendy /export")
-    
-    try:
-        # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
-        if hasattr(query.message, 'caption'):
-            # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
-            await query.edit_message_caption(
-                caption=message_text,
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
-            )
-        else:
-            # Standardowa wiadomość tekstowa
-            await query.edit_message_text(
-                text=message_text,
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
-            )
-    except Exception as e:
-        print(f"Błąd formatowania: {e}")
-        # Próba wysłania bez formatowania Markdown
-        if hasattr(query.message, 'caption'):
-            await query.edit_message_caption(
-                caption=message_text,
-                reply_markup=reply_markup
-            )
-        else:
-            await query.edit_message_text(
-                text=message_text,
-                reply_markup=reply_markup
-            )
-    return True
+        # Menu historii
+        keyboard = [
+            [InlineKeyboardButton(get_text("new_chat", language), callback_data="history_new")],
+            # Usunięty przycisk export conversation - zamiast tego instrukcja
+            [InlineKeyboardButton(get_text("delete_history", language), callback_data="history_delete")],
+            [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        message_text = get_text("history_options", language) + "\n\n" + get_text("export_info", language, default="Aby wyeksportować konwersację, użyj komendy /export")
+        
+        try:
+            # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
+            if hasattr(query.message, 'caption'):
+                # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
+                await query.edit_message_caption(
+                    caption=message_text,
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                # Standardowa wiadomość tekstowa
+                await query.edit_message_text(
+                    text=message_text,
+                    reply_markup=reply_markup,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+        except Exception as e:
+            print(f"Błąd formatowania: {e}")
+            # Próba wysłania bez formatowania Markdown
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=message_text,
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.edit_message_text(
+                    text=message_text,
+                    reply_markup=reply_markup
+                )
+        return True
         
     elif query.data == "menu_section_settings":
         # Menu ustawień - NOWE ZMODYFIKOWANE MENU
