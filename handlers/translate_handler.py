@@ -7,6 +7,8 @@ from database.credits_client import check_user_credits, deduct_user_credits, get
 from handlers.menu_handler import get_user_language
 import re
 
+
+
 async def translate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Obsługa komendy /translate
@@ -16,7 +18,7 @@ async def translate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     language = get_user_language(context, user_id)
     
     # Sprawdź, czy komenda zawiera argumenty (tekst do tłumaczenia i docelowy język)
-    if context.args and len(context.args) >= 3:
+    if context.args and len(context.args) >= 2:
         # Format: /translate [język_docelowy] [tekst]
         # np. /translate en Witaj świecie!
         target_lang = context.args[0].lower()
@@ -48,12 +50,25 @@ async def translate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
     
     # Jeśli nie ma odpowiedzi ani argumentów, wyświetl instrukcje
-    instruction_text = get_text("translate_instruction", language, default="📄 **Tłumaczenie tekstu**\n\nDostępne opcje:\n\n1️⃣ Prześlij zdjęcie z tekstem do tłumaczenia i dodaj /translate w opisie lub odpowiedz na zdjęcie komendą /translate\n\n2️⃣ Wyślij dokument i odpowiedz na niego komendą /translate\n\n3️⃣ Użyj komendy /translate [język_docelowy] [tekst]\nNa przykład: /translate en Witaj świecie!\n\nDostępne języki docelowe: en (angielski), pl (polski), ru (rosyjski), fr (francuski), de (niemiecki), es (hiszpański), it (włoski), zh (chiński)")
+    instruction_text = get_text("translate_instruction", language, default="📄 **Text Translation**
+
+Available options:
+
+1️⃣ Send a photo with text to translate and add /translate in the caption or reply to the photo with the /translate command
+
+2️⃣ Send a document and reply to it with the /translate command
+
+3️⃣ Use the command /translate [target_language] [text]
+For example: /translate en Hello world!
+
+Available target languages: en (English), pl (Polish), ru (Russian), fr (French), de (German), es (Spanish), it (Italian), zh (Chinese)")
     
     await update.message.reply_text(
         instruction_text,
         parse_mode=ParseMode.MARKDOWN
     )
+
+
 
 async def translate_photo(update: Update, context: ContextTypes.DEFAULT_TYPE, photo, target_lang="en"):
     """Tłumaczy tekst wykryty na zdjęciu"""
@@ -148,6 +163,8 @@ async def translate_document(update: Update, context: ContextTypes.DEFAULT_TYPE,
             parse_mode=ParseMode.MARKDOWN
         )
 
+
+
 async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE, text, target_lang="en"):
     """Tłumaczy podany tekst na określony język"""
     user_id = update.effective_user.id
@@ -161,7 +178,7 @@ async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE, tex
     
     # Wyślij informację o rozpoczęciu tłumaczenia
     message = await update.message.reply_text(
-        get_text("translating_text", language, default="Tłumaczę tekst, proszę czekać...")
+        get_text("translating_text", language, default="Translating text, please wait...")
     )
     
     # Wyślij informację o aktywności bota
@@ -170,8 +187,8 @@ async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE, tex
     # Wykonaj tłumaczenie korzystając z API OpenAI
     from utils.openai_client import chat_completion
     
-    # Przygotuj systemowy prompt dla modelu
-    system_prompt = f"Przetłumacz tekst z języka {language} na język {target_lang}. Zachowaj format tekstu. Zwróć tylko tłumaczenie."
+    # Uniwersalny prompt niezależny od języka
+    system_prompt = f"You are a professional translator. Translate the following text to {target_lang}. Preserve formatting. Only return the translation."
     
     # Przygotuj wiadomości dla API
     messages = [
@@ -183,16 +200,36 @@ async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE, tex
     translation = await chat_completion(messages, model="gpt-3.5-turbo")
     
     # Odejmij kredyty
-    deduct_user_credits(user_id, credit_cost, f"Tłumaczenie tekstu na język {target_lang}")
+    deduct_user_credits(user_id, credit_cost, f"Translation to {target_lang}")
     
     # Wyślij tłumaczenie
     source_lang_name = get_language_name(language)
     target_lang_name = get_language_name(target_lang)
     
     await message.edit_text(
-        f"*{get_text('translation_result', language, default='Wynik tłumaczenia')}* ({source_lang_name} → {target_lang_name})\n\n{translation}",
+        f"*{get_text('translation_result', language, default='Translation result')}* ({source_lang_name} → {target_lang_name})
+
+{translation}",
         parse_mode=ParseMode.MARKDOWN
     )
+    
+    # Sprawdź aktualny stan kredytów
+    credits = get_user_credits(user_id)
+    if credits < 5:
+        await update.message.reply_text(
+            f"{get_text('low_credits_warning', language)} {get_text('low_credits_message', language, credits=credits)}",
+            parse_mode=ParseMode.MARKDOWN
+        )
+
+    
+    # Sprawdź aktualny stan kredytów
+    credits = get_user_credits(user_id)
+    if credits < 5:
+        await update.message.reply_text(
+            f"{get_text('low_credits_warning', language)} {get_text('low_credits_message', language, credits=credits)}",
+            parse_mode=ParseMode.MARKDOWN
+        )
+
     
     # Sprawdź aktualny stan kredytów
     credits = get_user_credits(user_id)

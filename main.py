@@ -947,8 +947,25 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         print(f"Rozpoznano callback trybu: {query.data}")
         mode_id = query.data[5:]  # Pobierz ID trybu (usuń prefix "mode_")
         try:
+            from handlers.mode_handler import handle_mode_selection
             await handle_mode_selection(update, context, mode_id)
             return
+        except Exception as e:
+            print(f"Błąd w obsłudze trybu: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # Wyślij informację o błędzie
+            await query.answer(f"Error: {str(e)}")
+            return
+        return
+        except Exception as e:
+            print(f"Błąd w obsłudze trybu: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # Wyślij informację o błędzie
+            await query.answer(f"Error: {str(e)}")
+            return
+        return
         except Exception as e:
             print(f"Błąd w obsłudze trybu: {str(e)}")
             import traceback

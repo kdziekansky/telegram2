@@ -44,8 +44,30 @@ def get_user_language(context, user_id):
     except Exception as e:
         print(f"Błąd pobierania języka z bazy: {e}")
     
-    # Domyślny język, jeśli nie znaleziono w bazie
-    return "pl"
+    # Sprawdź language_code, jeśli nie znaleziono language
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT language_code FROM users WHERE id = ?", (user_id,))
+            result = cursor.fetchone()
+            conn.close()
+            
+            if result and result[0]:
+                # Zapisz w kontekście na przyszłość
+                if 'user_data' not in context.chat_data:
+                    context.chat_data['user_data'] = {}
+                
+                if user_id not in context.chat_data['user_data']:
+                    context.chat_data['user_data'][user_id] = {}
+                
+                context.chat_data['user_data'][user_id]['language'] = result[0]
+                return result[0]
+        except Exception as e:
+            print(f"Błąd pobierania language_code z bazy: {e}")
+        
+        # Domyślny język, jeśli wszystkie metody zawiodły
+        return "pl"
 
 def get_user_current_mode(context, user_id):
     """Pobiera aktualny tryb czatu użytkownika"""
