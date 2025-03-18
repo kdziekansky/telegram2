@@ -116,7 +116,7 @@ async def show_language_selection(update: Update, context: ContextTypes.DEFAULT_
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         # Link do zdjęcia bannera
-        banner_url = "https://i.imgur.com/8zdLrE5.png"
+        banner_url = "https://i.imgur.com/T3iJJlI.png"
         
         # Użyj neutralnego języka dla pierwszej wiadomości
         language_message = f"Wybierz język / Choose language / Выберите язык:"
