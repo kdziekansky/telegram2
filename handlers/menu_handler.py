@@ -5,6 +5,8 @@ from config import CHAT_MODES, AVAILABLE_LANGUAGES, AVAILABLE_MODELS, CREDIT_COS
 from utils.translations import get_text
 from database.credits_client import get_user_credits
 from database.sqlite_client import update_user_language
+from database.credits_client import get_user_credits, get_credit_packages
+from config import BOT_NAME
 
 # ==================== FUNKCJE POMOCNICZE DO ZARZĄDZANIA DANYMI UŻYTKOWNIKA ====================
 
@@ -508,14 +510,40 @@ async def handle_history_view(update, context):
     conversation = get_active_conversation(user_id)
     
     if not conversation:
+        # Informacja przez notyfikację
         await query.answer(get_text("history_no_conversation", language))
+        
+        # Wyświetl komunikat również w wiadomości
+        message_text = get_text("history_no_conversation", language)
+        keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="menu_section_history")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update_message(
+            query,
+            message_text,
+            reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
         return True
     
     # Pobierz historię konwersacji
     history = get_conversation_history(conversation['id'])
     
     if not history:
+        # Informacja przez notyfikację
         await query.answer(get_text("history_empty", language))
+        
+        # Wyświetl komunikat również w wiadomości
+        message_text = get_text("history_empty", language)
+        keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="menu_section_history")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update_message(
+            query,
+            message_text,
+            reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
         return True
     
     # Przygotuj tekst z historią
@@ -528,21 +556,231 @@ async def handle_history_view(update, context):
         content = msg['content']
         if len(content) > 100:
             content = content[:97] + "..."
+            
+        # Unikaj formatowania Markdown w treści wiadomości, które mogłoby powodować problemy
+        content = content.replace("*", "").replace("_", "").replace("`", "").replace("[", "").replace("]", "")
         
-        message_text += f"**{i+1}. {sender}:** {content}\n\n"
+        message_text += f"{i+1}. **{sender}**: {content}\n\n"
     
     # Dodaj przycisk do powrotu
     keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="menu_section_history")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    result = await update_message(
-        query,
-        message_text,
-        reply_markup,
-        parse_mode=ParseMode.MARKDOWN
-    )
+    # Spróbuj wysłać z formatowaniem, a jeśli się nie powiedzie, wyślij bez
+    try:
+        await update_message(
+            query,
+            message_text,
+            reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+    except Exception as e:
+        print(f"Błąd formatowania historii: {e}")
+        # Spróbuj bez formatowania
+        plain_message = message_text.replace("*", "").replace("**", "")
+        await update_message(
+            query,
+            plain_message,
+            reply_markup
+        )
     
-    return result
+    return True
+
+async def onboarding_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Przewodnik po funkcjach bota krok po kroku
+    Użycie: /onboarding
+    """
+    user_id = update.effective_user.id
+    language = get_user_language(context, user_id)
+    
+    # Inicjalizacja stanu onboardingu
+    if 'user_data' not in context.chat_data:
+        context.chat_data['user_data'] = {}
+    
+    if user_id not in context.chat_data['user_data']:
+        context.chat_data['user_data'][user_id] = {}
+    
+    context.chat_data['user_data'][user_id]['onboarding_state'] = 0
+    
+    # Lista kroków onboardingu - USUNIĘTE NIEDZIAŁAJĄCE FUNKCJE
+    steps = [
+        'welcome', 'chat', 'modes', 'images', 'analysis', 
+        'credits', 'referral', 'export', 'settings', 'finish'
+    ]
+    
+    # Pobierz aktualny krok
+    current_step = 0
+    step_name = steps[current_step]
+    
+    # Przygotuj tekst dla aktualnego kroku
+    text = get_text(f"onboarding_{step_name}", language, bot_name=BOT_NAME)
+    
+    # Przygotuj klawiaturę nawigacyjną
+    keyboard = []
+    row = []
+    
+    # Na pierwszym kroku tylko przycisk "Dalej"
+    row.append(InlineKeyboardButton(
+        get_text("onboarding_next", language), 
+        callback_data=f"onboarding_next"
+    ))
+    
+    keyboard.append(row)
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Wysyłamy zdjęcie z podpisem dla pierwszego kroku
+    await update.message.reply_photo(
+        photo=get_onboarding_image_url(step_name),
+        caption=text,
+        reply_markup=reply_markup
+    )
+
+async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Obsługuje przyciski nawigacyjne onboardingu
+    """
+    query = update.callback_query
+    user_id = query.from_user.id
+    language = get_user_language(context, user_id)
+    
+    await query.answer()  # Odpowiedz na callback, aby usunąć oczekiwanie
+    
+    # Inicjalizacja stanu onboardingu jeśli nie istnieje
+    if 'user_data' not in context.chat_data:
+        context.chat_data['user_data'] = {}
+    
+    if user_id not in context.chat_data['user_data']:
+        context.chat_data['user_data'][user_id] = {}
+    
+    if 'onboarding_state' not in context.chat_data['user_data'][user_id]:
+        context.chat_data['user_data'][user_id]['onboarding_state'] = 0
+    
+    # Pobierz aktualny stan onboardingu
+    current_step = context.chat_data['user_data'][user_id]['onboarding_state']
+    
+    # Lista kroków onboardingu - USUNIĘTE NIEDZIAŁAJĄCE FUNKCJE
+    steps = [
+        'welcome', 'chat', 'modes', 'images', 'analysis', 
+        'credits', 'referral', 'export', 'settings', 'finish'
+    ]
+    
+    # Obsługa przycisków
+    if query.data == "onboarding_next":
+        # Przejdź do następnego kroku
+        next_step = min(current_step + 1, len(steps) - 1)
+        context.chat_data['user_data'][user_id]['onboarding_state'] = next_step
+        step_name = steps[next_step]
+    elif query.data == "onboarding_back":
+        # Wróć do poprzedniego kroku
+        prev_step = max(0, current_step - 1)
+        context.chat_data['user_data'][user_id]['onboarding_state'] = prev_step
+        step_name = steps[prev_step]
+    elif query.data == "onboarding_finish":
+        # Usuń stan onboardingu i zakończ bez wysyłania nowej wiadomości
+        if 'onboarding_state' in context.chat_data['user_data'][user_id]:
+            del context.chat_data['user_data'][user_id]['onboarding_state']
+        
+        # NAPRAWIONE: Wyślij powitalną wiadomość bez formatowania Markdown
+        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
+        # Usuń potencjalnie problematyczne znaki formatowania
+        welcome_text = welcome_text.replace("*", "").replace("_", "").replace("`", "").replace("[", "").replace("]", "")
+        
+        # Utwórz klawiaturę menu
+        keyboard = [
+            [
+                InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
+                InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
+            ],
+            [
+                InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
+                InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
+            ],
+            [
+                InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
+                InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
+            ]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            # Próba wysłania zwykłej wiadomości tekstowej zamiast zdjęcia
+            message = await context.bot.send_message(
+                chat_id=query.message.chat_id,
+                text=welcome_text,
+                reply_markup=reply_markup
+            )
+            
+            # Zapisz ID wiadomości menu i stan menu
+            from handlers.menu_handler import store_menu_state
+            store_menu_state(context, user_id, 'main', message.message_id)
+            
+            # Usuń poprzednią wiadomość
+            await query.message.delete()
+        except Exception as e:
+            print(f"Błąd przy wysyłaniu wiadomości końcowej onboardingu: {e}")
+        return
+    else:
+        # Nieznany callback
+        return
+    
+    # Pobierz aktualny krok po aktualizacji
+    current_step = context.chat_data['user_data'][user_id]['onboarding_state']
+    step_name = steps[current_step]
+    
+    # Przygotuj tekst dla aktualnego kroku
+    text = get_text(f"onboarding_{step_name}", language, bot_name=BOT_NAME)
+    
+    # Przygotuj klawiaturę nawigacyjną
+    keyboard = []
+    row = []
+    
+    # Przycisk "Wstecz" jeśli nie jesteśmy na pierwszym kroku
+    if current_step > 0:
+        row.append(InlineKeyboardButton(
+            get_text("onboarding_back", language),
+            callback_data="onboarding_back"
+        ))
+    
+    # Przycisk "Dalej" lub "Zakończ" w zależności od kroku
+    if current_step < len(steps) - 1:
+        row.append(InlineKeyboardButton(
+            get_text("onboarding_next", language),
+            callback_data="onboarding_next"
+        ))
+    else:
+        row.append(InlineKeyboardButton(
+            get_text("onboarding_finish_button", language),
+            callback_data="onboarding_finish"
+        ))
+    
+    keyboard.append(row)
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Pobierz URL obrazu dla aktualnego kroku
+    image_url = get_onboarding_image_url(step_name)
+    
+    try:
+        # Usuń poprzednią wiadomość i wyślij nową z odpowiednim obrazem
+        await query.message.delete()
+        await context.bot.send_photo(
+            chat_id=query.message.chat_id,
+            photo=image_url,
+            caption=text,
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        print(f"Błąd przy aktualizacji wiadomości onboardingu: {e}")
+        try:
+            # Jeśli usunięcie i wysłanie nowej wiadomości się nie powiedzie, 
+            # próbujemy zaktualizować obecną
+            await query.edit_message_caption(
+                caption=text,
+                reply_markup=reply_markup
+            )
+        except Exception as e2:
+            print(f"Nie udało się zaktualizować wiadomości: {e2}")
 
 # ==================== GŁÓWNE FUNKCJE MENU ====================
 
@@ -643,6 +881,92 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         return await handle_image_section(update, context)
     elif query.data == "menu_back_main":
         return await handle_back_to_main(update, context)
+    
+    # Obsługa kredytów bezpośrednio z menu
+    elif query.data == "menu_credits_buy" or query.data == "credits_buy":
+        user_id = query.from_user.id
+        language = get_user_language(context, user_id)
+        
+        # Pobierz pakiety kredytów
+        from database.credits_client import get_credit_packages
+        packages = get_credit_packages()
+        
+        packages_text = ""
+        for pkg in packages:
+            packages_text += f"*{pkg['id']}.* {pkg['name']} - *{pkg['credits']}* {get_text('credits', language)} - *{pkg['price']} PLN*\n"
+        
+        # Utwórz klawiaturę z pakietami
+        keyboard = []
+        for pkg in packages:
+            keyboard.append([
+                InlineKeyboardButton(
+                    f"{pkg['name']} - {pkg['credits']} {get_text('credits', language)} ({pkg['price']} PLN)", 
+                    callback_data=f"buy_package_{pkg['id']}"
+                )
+            ])
+        
+        # Dodaj przycisk powrotu
+        keyboard.append([
+            InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")
+        ])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Tekst informacyjny o zakupie kredytów
+        message = get_text("buy_credits", language, packages=packages_text)
+        
+        await update_message(
+            query,
+            message,
+            reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return True
+    
+    elif query.data == "menu_credits_buy" or query.data == "credits_buy":
+        user_id = query.from_user.id
+        language = get_user_language(context, user_id)
+        
+        # Pobierz pakiety kredytów
+        packages = get_credit_packages()
+        
+        packages_text = ""
+        for pkg in packages:
+            packages_text += f"*{pkg['id']}.* {pkg['name']} - *{pkg['credits']}* {get_text('credits', language)} - *{pkg['price']} PLN*\n"
+        
+        # Utwórz klawiaturę z pakietami
+        keyboard = []
+        for pkg in packages:
+            keyboard.append([
+                InlineKeyboardButton(
+                    f"{pkg['name']} - {pkg['credits']} {get_text('credits', language)} ({pkg['price']} PLN)", 
+                    callback_data=f"buy_package_{pkg['id']}"
+                )
+            ])
+        
+        # Dodaj przycisk dla gwiazdek Telegram
+        keyboard.append([
+            InlineKeyboardButton("⭐ " + get_text("buy_with_stars", language, default="Kup za gwiazdki Telegram"), 
+                                callback_data="show_stars_options")
+        ])
+        
+        # Dodaj przycisk powrotu
+        keyboard.append([
+            InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")
+        ])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Tekst informacyjny o zakupie kredytów
+        message = get_text("buy_credits", language, packages=packages_text)
+        
+        await update_message(
+            query,
+            message,
+            reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return True
     
     # Ustawienia
     elif query.data == "settings_model":

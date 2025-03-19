@@ -151,25 +151,87 @@ async def process_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE, p
             parse_mode=ParseMode.MARKDOWN
         )
 
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ContextTypes
+from telegram.constants import ParseMode
+from config import BOT_NAME, CREDIT_COSTS
+from utils.translations import get_text
+from database.credits_client import (
+    get_user_credits, get_credit_packages, 
+    get_user_credit_stats, purchase_credits,
+    get_stars_conversion_rate, add_stars_payment_option
+)
+from handlers.menu_handler import get_user_language
+
 async def handle_credit_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Handle buttons related to credits
+    Obsługa przycisków związanych z kredytami
     """
     query = update.callback_query
-    await query.answer()
-    
     user_id = query.from_user.id
     language = get_user_language(context, user_id)
     
-    if query.data == "buy_credits" or query.data == "credits_buy" or query.data == "menu_credits_buy":
-        # Redirect to the buy command
+    await query.answer()
+    
+    # Obsługa sprawdzania stanu konta
+    if query.data == "credits_check" or query.data == "menu_credits_check":
+        # Pobierz aktualne dane kredytów
+        credits = get_user_credits(user_id)
+        credit_stats = get_user_credit_stats(user_id)
+        
+        # Przygotuj tekst wiadomości
+        message = f"""
+*{get_text('credits_management', language)}*
+
+{get_text('current_balance', language)}: *{credits}* {get_text('credits', language)}
+
+{get_text('total_purchased', language)}: *{credit_stats.get('total_purchased', 0)}* {get_text('credits', language)}
+{get_text('total_spent', language)}: *{credit_stats.get('total_spent', 0):.2f}* PLN
+{get_text('last_purchase', language)}: *{credit_stats.get('last_purchase', get_text('no_transactions', language))}*
+
+*{get_text('credit_history', language)} ({get_text('last_10', language, default='last 10')}):*
+"""
+        
+        if credit_stats.get('usage_history'):
+            for i, transaction in enumerate(credit_stats['usage_history'], 1):
+                date = transaction['date'].split('T')[0]
+                if transaction['type'] in ["add", "purchase"]:
+                    message += f"\n{i}. ➕ +{transaction['amount']} {get_text('credits', language)} ({date})"
+                else:
+                    message += f"\n{i}. ➖ -{transaction['amount']} {get_text('credits', language)} ({date})"
+                if transaction.get('description'):
+                    message += f" - {transaction['description']}"
+        else:
+            message += f"\n{get_text('no_transactions', language)}"
+        
+        # Utwórz klawiaturę
+        keyboard = [
+            [InlineKeyboardButton(get_text("buy_more_credits", language), callback_data="menu_credits_buy")],
+            [InlineKeyboardButton(get_text("credit_stats", language), callback_data="credit_advanced_analytics")],
+            [InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Zaktualizuj wiadomość
+        try:
+            await query.edit_message_text(
+                message, 
+                reply_markup=reply_markup, 
+                parse_mode=ParseMode.MARKDOWN
+            )
+        except Exception as e:
+            print(f"Błąd przy aktualizacji wiadomości: {e}")
+        return True
+    
+    # Obsługa zakupu kredytów
+    if query.data == "credits_buy" or query.data == "menu_credits_buy":
+        # Pobierz dostępne pakiety kredytów
         packages = get_credit_packages()
         
-        packages_text = ""
-        for pkg in packages:
-            packages_text += f"*{pkg['id']}.* {pkg['name']} - *{pkg['credits']}* {get_text('credits', language)} - *{pkg['price']} PLN*\n"
+        # Przygotuj tekst wiadomości
+        message = f"🛒 *{get_text('buy_credits_btn', language)}*\n\n{get_text('select_package', language)}:\n\n"
         
-        # Create buttons to buy credits
+        # Utwórz klawiaturę z pakietami
         keyboard = []
         for pkg in packages:
             keyboard.append([
@@ -179,139 +241,43 @@ async def handle_credit_callback(update: Update, context: ContextTypes.DEFAULT_T
                 )
             ])
         
-        # Add button for star purchases
-        keyboard.append([
-            InlineKeyboardButton("⭐ " + get_text("buy_with_stars", language, default="Buy with Telegram Stars"), 
-                                callback_data="show_stars_options")
-        ])
-        
-        # Add button to go back to credits menu
-        keyboard.append([
-            InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")
-        ])
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        try:
-            await query.edit_message_text(
-                get_text("buy_credits", language, packages=packages_text),
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup
-            )
-        except Exception as e:
-            print(f"Błąd przy edycji wiadomości: {e}")
-            try:
-                # Bez formatowania Markdown
-                await query.edit_message_text(
-                    get_text("buy_credits", language, packages=packages_text),
-                    reply_markup=reply_markup
-                )
-            except Exception as e2:
-                print(f"Drugi błąd przy edycji wiadomości: {e2}")
-    
-    elif query.data == "credits_check" or query.data == "menu_credits_check":
-        # Show user's credit balance
-        credits = get_user_credits(user_id)
-        
-        # Create buttons for credit options
-        keyboard = [
-            [InlineKeyboardButton(get_text("buy_credits_btn", language), callback_data="credits_buy")],
-            [InlineKeyboardButton(get_text("credit_stats", language, default="Statistics"), callback_data="credits_stats")],
+        # Dodaj przyciski dodatkowe
+        keyboard.extend([
+            [InlineKeyboardButton(get_text("buy_with_stars", language), callback_data="show_stars_options")],
             [InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")]
-        ]
+        ])
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         
+        # Zaktualizuj wiadomość
         try:
             await query.edit_message_text(
-                get_text("credits_info", language, bot_name=BOT_NAME, credits=credits),
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup
+                message, 
+                reply_markup=reply_markup, 
+                parse_mode=ParseMode.MARKDOWN
             )
         except Exception as e:
-            print(f"Błąd przy edycji wiadomości: {e}")
-            try:
-                # Bez formatowania Markdown
-                await query.edit_message_text(
-                    get_text("credits_info", language, bot_name=BOT_NAME, credits=credits),
-                    reply_markup=reply_markup
-                )
-            except Exception as e2:
-                print(f"Drugi błąd przy edycji wiadomości: {e2}")
+            print(f"Błąd przy aktualizacji wiadomości: {e}")
+        return True
     
-    elif query.data == "credits_stats":
-        # Show credit statistics
-        stats = get_user_credit_stats(user_id)
-        
-        # Format the date of last purchase
-        last_purchase = "None" if not stats['last_purchase'] else stats['last_purchase'].split('T')[0]
-        
-        # Create message with statistics
-        message = f"""
-*📊 {get_text("credits_analytics", language, default="Credit Analytics")}*
-
-{get_text("current_balance", language, default="Current balance")}: *{stats['credits']}* {get_text("credits", language)}
-{get_text("total_purchased", language, default="Total purchased")}: *{stats['total_purchased']}* {get_text("credits", language)}
-{get_text("total_spent", language, default="Total spent")}: *{stats['total_spent']}* PLN
-{get_text("last_purchase", language, default="Last purchase")}: *{last_purchase}*
-
-*📝 {get_text("credit_history", language, default="Transaction history")} ({get_text("last_10", language, default="last 10")}):*
-"""
-        
-        if not stats['usage_history']:
-            message += f"\n{get_text('no_transactions', language, default='No transaction history.')}"
-        else:
-            for i, transaction in enumerate(stats['usage_history']):
-                date = transaction['date'].split('T')[0]
-                if transaction['type'] == "add" or transaction['type'] == "purchase":
-                    message += f"\n{i+1}. ➕ +{transaction['amount']} {get_text('credits', language)} ({date})"
-                    if transaction['description']:
-                        message += f" - {transaction['description']}"
-                else:
-                    message += f"\n{i+1}. ➖ -{transaction['amount']} {get_text('credits', language)} ({date})"
-                    if transaction['description']:
-                        message += f" - {transaction['description']}"
-        
-        # Add buttons for navigation
-        keyboard = [
-            [InlineKeyboardButton(get_text("credit_analytics", language, default="Advanced Analytics"), callback_data="credit_advanced_analytics")],
-            [InlineKeyboardButton(get_text("back", language), callback_data="credits_check")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        try:
-            await query.edit_message_text(
-                message,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup
-            )
-        except Exception as e:
-            print(f"Błąd przy edycji wiadomości: {e}")
-            try:
-                await query.edit_message_text(
-                    message,
-                    reply_markup=reply_markup
-                )
-            except Exception as e2:
-                print(f"Drugi błąd przy edycji wiadomości: {e2}")
-    
-    elif query.data.startswith("buy_package_"):
-        # Handle purchase of a specific package
+    # Obsługa przycisków zakupu pakietów
+    if query.data.startswith("buy_package_"):
         package_id = int(query.data.split("_")[2])
         
-        # Simulate credit purchase
+        # Dokonaj zakupu kredytów
         success, package = purchase_credits(user_id, package_id)
         
         if success and package:
             current_credits = get_user_credits(user_id)
             
-            # Create buttons
+            # Utwórz klawiaturę
             keyboard = [
                 [InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits")],
                 [InlineKeyboardButton(get_text("back", language), callback_data="menu_back_main")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
+            # Przygotuj wiadomość o sukcesie
             try:
                 await query.edit_message_text(
                     get_text("credit_purchase_success", language,
@@ -324,22 +290,9 @@ async def handle_credit_callback(update: Update, context: ContextTypes.DEFAULT_T
                     reply_markup=reply_markup
                 )
             except Exception as e:
-                print(f"Błąd przy edycji wiadomości: {e}")
-                try:
-                    # Bez formatowania Markdown
-                    await query.edit_message_text(
-                        get_text("credit_purchase_success", language,
-                            package_name=package['name'],
-                            credits=package['credits'],
-                            price=package['price'],
-                            total_credits=current_credits
-                        ),
-                        reply_markup=reply_markup
-                    )
-                except Exception as e2:
-                    print(f"Drugi błąd przy edycji wiadomości: {e2}")
+                print(f"Błąd przy aktualizacji wiadomości: {e}")
         else:
-            # Create button to go back
+            # Klawiatura powrotu
             keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="credits_buy")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
@@ -348,112 +301,71 @@ async def handle_credit_callback(update: Update, context: ContextTypes.DEFAULT_T
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=reply_markup
             )
-            
-    # Handle star options button
-    elif query.data == "show_stars_options":
-        # Get conversion rate
+        return True
+    
+    # Obsługa opcji zakupu za gwiazdki
+    if query.data == "show_stars_options":
+        # Pobierz kursy wymiany gwiazdek
         conversion_rates = get_stars_conversion_rate()
         
-        # Create buttons for different star purchase options
+        # Utwórz klawiaturę
         keyboard = []
         for stars, credits in conversion_rates.items():
             keyboard.append([
                 InlineKeyboardButton(
-                    f"⭐ {stars} stars = {credits} credits", 
+                    f"⭐ {stars} gwiazdek = {credits} kredytów", 
                     callback_data=f"buy_stars_{stars}"
                 )
             ])
         
-        # Add return button
+        # Dodaj przycisk powrotu
         keyboard.append([
-            InlineKeyboardButton(get_text("back", language, default="Back to purchase options"), callback_data="credits_buy")
+            InlineKeyboardButton(get_text("back", language), callback_data="credits_buy")
         ])
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            get_text("stars_purchase_info", language, default="🌟 *Purchase Credits with Telegram Stars* 🌟\n\nChoose one of the options below to exchange Telegram stars for credits.\nThe more stars you exchange at once, the better bonus you'll receive!\n\n⚠️ *Note:* To purchase with stars, a Telegram Premium account is required."),
+            get_text("stars_purchase_info", language, default="🌟 *Zakup kredytów za Telegram Stars* 🌟\n\nWybierz jedną z opcji poniżej, aby wymienić gwiazdki Telegram na kredyty.\nIm więcej gwiazdek wymienisz jednorazowo, tym lepszy bonus otrzymasz!\n\n⚠️ *Uwaga:* Aby dokonać zakupu gwiazdkami, wymagane jest konto Telegram Premium."),
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=reply_markup
         )
-        return
+        return True
     
-    # Handle star purchase buttons
-    elif query.data.startswith("buy_stars_"):
+    # Obsługa zakupu za gwiazdki
+    if query.data.startswith("buy_stars_"):
         stars_amount = int(query.data.split("_")[2])
         
-        # Get conversion rate
+        # Pobierz kursy wymiany gwiazdek
         conversion_rates = get_stars_conversion_rate()
         
-        # Check if the specified star amount is supported
+        # Sprawdź, czy podana liczba gwiazdek jest obsługiwana
         if stars_amount not in conversion_rates:
             await query.edit_message_text(
-                get_text("stars_invalid_amount", language, default="An error occurred. Invalid number of stars."),
+                get_text("stars_invalid_amount", language, default="Wystąpił błąd. Nieprawidłowa liczba gwiazdek."),
                 parse_mode=ParseMode.MARKDOWN
             )
-            return
+            return True
         
         credits_amount = conversion_rates[stars_amount]
         
-        # Here should be a call to Telegram Payments API to collect stars
-        # Since this is just a simulation, we assume the payment was successful
-        
-        # Add credits to user's account
+        # Dodaj kredyty do konta użytkownika
         success = add_stars_payment_option(user_id, stars_amount, credits_amount)
         
         if success:
             current_credits = get_user_credits(user_id)
             await query.edit_message_text(
-                get_text("stars_purchase_success", language, default=f"✅ *Purchase completed successfully!*\n\nExchanged *{stars_amount}* stars for *{credits_amount}* credits\n\nCurrent credit balance: *{current_credits}*\n\nThank you for your purchase! 🎉",
-                    stars=stars_amount,
-                    credits=credits_amount,
-                    total=current_credits
-                ),
+                get_text("stars_purchase_success", language, default=f"✅ *Zakup zakończony sukcesem!*\n\nWymieniono *{stars_amount}* gwiazdek na *{credits_amount}* kredytów\n\nAktualny stan kredytów: *{current_credits}*\n\nDziękujemy za zakup! 🎉"),
                 parse_mode=ParseMode.MARKDOWN
             )
         else:
             await query.edit_message_text(
-                get_text("purchase_error", language, default="An error occurred while processing the payment. Please try again later."),
+                get_text("purchase_error", language, default="Wystąpił błąd podczas realizacji płatności. Spróbuj ponownie później."),
                 parse_mode=ParseMode.MARKDOWN
             )
+        return True
     
-    elif query.data == "credit_advanced_analytics":
-        # This would handle showing more detailed analytics
-        # Could display charts or more detailed statistics
-        # For now, just redirect to the creditstats command
-        
-        # Create a fake update to pass to the creditstats command
-        class FakeMessage:
-            def __init__(self, chat_id):
-                self.chat_id = chat_id
-                
-            async def reply_text(self, *args, **kwargs):
-                pass
-                
-        class FakeUpdate:
-            def __init__(self, user_id, chat_id):
-                self.effective_user = type('obj', (object,), {'id': user_id})
-                self.message = FakeMessage(chat_id)
-                self.effective_chat = type('obj', (object,), {'id': chat_id})
-        
-        fake_update = FakeUpdate(user_id, query.message.chat_id)
-        
-        # Create fake context args
-        if not hasattr(context, 'args'):
-            context.args = ["30"]  # Default to 30 days
-        
-        # Call the creditstats command
-        await credit_analytics_command(fake_update, context)
-        
-        # Return to credit stats
-        keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="credits_stats")]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            get_text("analytics_sent", language, default="Credit usage analytics have been sent as separate messages."),
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=reply_markup
-        )
+    return False  # Jeśli callback nie został obsłużony
 
 async def credit_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """

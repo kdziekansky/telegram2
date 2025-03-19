@@ -99,7 +99,7 @@ async def onboarding_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Lista kroków onboardingu
     steps = [
         'welcome', 'chat', 'modes', 'images', 'analysis', 
-        'credits', 'referral', 'export', 'themes', 
+        'credits', 'referral', 'export'', 
         'settings', 'finish'
     ]
     
@@ -145,9 +145,6 @@ def get_onboarding_image_url(step_name):
         'credits': "https://i.imgur.com/0SM3Lj0.png",     # Obrazek dla systemu kredytów
         'referral': "https://i.imgur.com/0I1UjLi.png",    # Obrazek dla programu referencyjnego
         'export': "https://i.imgur.com/xyZLjac.png",      # Obrazek dla eksportu
-        'themes': "https://i.imgur.com/BjHVLZy.png",      # Obrazek dla tematów
-        'reminders': "https://i.imgur.com/VqT5aQR.png",   # Obrazek dla przypomnień
-        'notes': "https://i.imgur.com/8wPNFkm.png",       # Obrazek dla notatek
         'settings': "https://i.imgur.com/XUAAxe9.png",    # Obrazek dla ustawień
         'finish': "https://i.imgur.com/bvPAD9a.png"       # Obrazek dla końca onboardingu
     }
@@ -178,11 +175,10 @@ async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAU
     # Pobierz aktualny stan onboardingu
     current_step = context.chat_data['user_data'][user_id]['onboarding_state']
     
-    # Lista kroków onboardingu
+    # Lista kroków onboardingu - USUNIĘTE NIEDZIAŁAJĄCE FUNKCJE
     steps = [
         'welcome', 'chat', 'modes', 'images', 'analysis', 
-        'credits', 'export', 'themes', 'reminders', 'notes', 
-        'settings', 'finish'
+        'credits', 'referral', 'export', 'settings', 'finish'
     ]
     
     # Obsługa przycisków
@@ -197,44 +193,63 @@ async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAU
         context.chat_data['user_data'][user_id]['onboarding_state'] = prev_step
         step_name = steps[prev_step]
     elif query.data == "onboarding_finish":
-        # Usuń stan onboardingu i zakończ bez wysyłania nowej wiadomości
+        # Usuń stan onboardingu
         if 'onboarding_state' in context.chat_data['user_data'][user_id]:
             del context.chat_data['user_data'][user_id]['onboarding_state']
         
-        # Wyślij powitalną wiadomość zamiast próbować edytować obecną
-        banner_url = "https://i.imgur.com/OiPImmC.png"
-        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
-        
-        # Utwórz klawiaturę menu
-        keyboard = [
-            [
-                InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
-                InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
-            ],
-            [
-                InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
-                InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
-            ],
-            [
-                InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
-                InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
+        # Wysyłamy zwykłą wiadomość tekstową zamiast zdjęcia
+        try:
+            # Pobierz tekst powitalny
+            welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
+            # Usuń potencjalnie problematyczne znaki formatowania
+            clean_welcome_text = welcome_text.replace("*", "").replace("_", "").replace("`", "").replace("[", "").replace("]", "")
+            
+            # Utwórz klawiaturę menu
+            keyboard = [
+                [
+                    InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
+                    InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
+                ],
+                [
+                    InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
+                    InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
+                ],
+                [
+                    InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
+                    InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
+                ]
             ]
-        ]
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        # Wyślij powitalną wiadomość
-        await context.bot.send_photo(
-            chat_id=query.message.chat_id,
-            photo=banner_url,
-            caption=welcome_text,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
-        
-        # Usuń poprzednią wiadomość
-        await query.message.delete()
-        return
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            # Wyślij wiadomość tekstową
+            message = await context.bot.send_message(
+                chat_id=query.message.chat_id,
+                text=clean_welcome_text,
+                reply_markup=reply_markup
+            )
+            
+            # Zapisz ID wiadomości menu
+            from handlers.menu_handler import store_menu_state
+            store_menu_state(context, user_id, 'main', message.message_id)
+            
+            # Usuń poprzednią wiadomość
+            try:
+                await query.message.delete()
+            except Exception as e2:
+                print(f"Błąd przy usuwaniu starej wiadomości: {e2}")
+            
+            return
+        except Exception as e:
+            print(f"Błąd przy zakończeniu onboardingu: {e}")
+            # Próbujemy wyświetlić komunikat o błędzie
+            try:
+                await context.bot.send_message(
+                    chat_id=query.message.chat_id,
+                    text="Wystąpił błąd podczas kończenia przewodnika. Spróbuj użyć komendy /start, aby powrócić do menu głównego."
+                )
+            except:
+                pass
+            return
     else:
         # Nieznany callback
         return
@@ -282,8 +297,7 @@ async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAU
             chat_id=query.message.chat_id,
             photo=image_url,
             caption=text,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
+            reply_markup=reply_markup
         )
     except Exception as e:
         print(f"Błąd przy aktualizacji wiadomości onboardingu: {e}")
@@ -292,12 +306,20 @@ async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAU
             # próbujemy zaktualizować obecną
             await query.edit_message_caption(
                 caption=text,
-                reply_markup=reply_markup,
-                parse_mode=ParseMode.MARKDOWN
+                reply_markup=reply_markup
             )
         except Exception as e2:
             print(f"Nie udało się zaktualizować wiadomości: {e2}")
-
+            try:
+                # Ostateczna próba - wyślij nową wiadomość tekstową
+                await context.bot.send_message(
+                    chat_id=query.message.chat_id,
+                    text=text,
+                    reply_markup=reply_markup
+                )
+            except Exception as e3:
+                print(f"Wszystkie próby aktualizacji wiadomości zawiodły: {e3}")
+                
 # Handlers dla podstawowych komend
 
 async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -861,7 +883,9 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             from handlers.menu_handler import handle_menu_callback
             result = await handle_menu_callback(update, context)
             print(f"Wynik obsługi menu: {result}")
-            return
+            if result:
+                return
+            # Jeśli menu_handler nie obsłużył callbacku, kontynuujemy poniżej
         except Exception as e:
             print(f"Błąd w obsłudze menu: {str(e)}")
             import traceback
@@ -881,14 +905,12 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
                     )
             except:
                 pass
-            return
     
     # Obsługa wyboru języka
     if query.data.startswith("start_lang_"):
         from handlers.start_handler import handle_language_selection
         await handle_language_selection(update, context)
         return
-    
     
     # Obsługa przycisku wyboru modelu
     if query.data.startswith("model_"):
@@ -912,6 +934,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             await query.answer(f"Error: {str(e)}")
             return
     
+    # Obsługa wyboru trybu czatu
     if query.data.startswith("mode_"):
         print(f"Rozpoznano callback trybu: {query.data}")
         mode_id = query.data[5:]  # Pobierz ID trybu (usuń prefix "mode_")
@@ -922,6 +945,168 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     if query.data.startswith("theme_") or query.data == "new_theme" or query.data == "no_theme":
         from handlers.theme_handler import handle_theme_callback
         await handle_theme_callback(update, context)
+        return
+    
+    # POPRAWKA: Bezpośrednia obsługa history_view
+    if query.data == "history_view":
+        user_id = query.from_user.id
+        language = get_user_language(context, user_id)
+        
+        # Pobierz aktywną konwersację
+        from database.sqlite_client import get_active_conversation, get_conversation_history
+        conversation = get_active_conversation(user_id)
+        
+        if not conversation:
+            # Informacja przez wiadomość
+            keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="menu_section_history")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("history_no_conversation", language),
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("history_no_conversation", language),
+                    reply_markup=reply_markup
+                )
+            return
+        
+        # Pobierz historię konwersacji
+        history = get_conversation_history(conversation['id'])
+        
+        if not history:
+            keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="menu_section_history")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            if hasattr(query.message, 'caption'):
+                await query.edit_message_caption(
+                    caption=get_text("history_empty", language),
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.edit_message_text(
+                    text=get_text("history_empty", language),
+                    reply_markup=reply_markup
+                )
+            return
+        
+        # Przygotuj tekst z historią - bez formatowania Markdown
+        message_text = f"{get_text('history_title', language)}\n\n"
+        
+        for i, msg in enumerate(history[-10:]):  # Ostatnie 10 wiadomości
+            sender = get_text("history_user", language) if msg['is_from_user'] else get_text("history_bot", language)
+            
+            # Skróć treść wiadomości
+            content = msg['content']
+            if len(content) > 100:
+                content = content[:97] + "..."
+                
+            message_text += f"{i+1}. {sender}: {content}\n\n"
+        
+        # Dodaj przycisk do powrotu
+        keyboard = [[InlineKeyboardButton(get_text("back", language), callback_data="menu_section_history")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        if hasattr(query.message, 'caption'):
+            await query.edit_message_caption(
+                caption=message_text,
+                reply_markup=reply_markup
+            )
+        else:
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup
+            )
+        return
+    
+    # POPRAWKA: Bezpośrednia obsługa menu_credits_check
+    if query.data == "menu_credits_check" or query.data == "credits_check":
+        user_id = query.from_user.id
+        language = get_user_language(context, user_id)
+        
+        # Pobierz stan kredytów
+        from database.credits_client import get_user_credits
+        credits = get_user_credits(user_id)
+        
+        # Klawiatura z opcjami kredytów
+        keyboard = [
+            [InlineKeyboardButton(get_text("buy_credits_btn", language), callback_data="credits_buy")],
+            [InlineKeyboardButton(get_text("credit_stats", language, default="Statystyki"), callback_data="credits_stats")],
+            [InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Tekst informacyjny o kredytach
+        message = get_text("credits_info", language, bot_name=BOT_NAME, credits=credits)
+        
+        if hasattr(query.message, 'caption'):
+            await query.edit_message_caption(
+                caption=message,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            await query.edit_message_text(
+                text=message,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        return
+    
+    # POPRAWKA: Bezpośrednia obsługa menu_credits_buy
+    if query.data == "menu_credits_buy" or query.data == "credits_buy":
+        user_id = query.from_user.id
+        language = get_user_language(context, user_id)
+        
+        # Pobierz pakiety kredytów
+        from database.credits_client import get_credit_packages
+        packages = get_credit_packages()
+        
+        packages_text = ""
+        for pkg in packages:
+            packages_text += f"*{pkg['id']}.* {pkg['name']} - *{pkg['credits']}* {get_text('credits', language)} - *{pkg['price']} PLN*\n"
+        
+        # Utwórz klawiaturę z pakietami
+        keyboard = []
+        for pkg in packages:
+            keyboard.append([
+                InlineKeyboardButton(
+                    f"{pkg['name']} - {pkg['credits']} {get_text('credits', language)} ({pkg['price']} PLN)", 
+                    callback_data=f"buy_package_{pkg['id']}"
+                )
+            ])
+        
+        # Dodaj przycisk dla gwiazdek Telegram
+        keyboard.append([
+            InlineKeyboardButton("⭐ " + get_text("buy_with_stars", language, default="Kup za gwiazdki Telegram"), 
+                                callback_data="show_stars_options")
+        ])
+        
+        # Dodaj przycisk powrotu
+        keyboard.append([
+            InlineKeyboardButton(get_text("back", language), callback_data="menu_section_credits")
+        ])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Tekst informacyjny o zakupie kredytów
+        message = get_text("buy_credits", language, packages=packages_text)
+        
+        if hasattr(query.message, 'caption'):
+            await query.edit_message_caption(
+                caption=message,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            await query.edit_message_text(
+                text=message,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
         return
     
     # Obsługa przycisku tłumaczenia zdjęcia
@@ -1289,7 +1474,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_reminder_callback(update, context)
         return
     
-        # Specjalna obsługa przycisku powrotu do głównego menu
+    # Specjalna obsługa przycisku powrotu do głównego menu
     if query.data == "menu_back_main":
         keyboard = [
             [
