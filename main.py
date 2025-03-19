@@ -99,7 +99,7 @@ async def onboarding_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Lista kroków onboardingu
     steps = [
         'welcome', 'chat', 'modes', 'images', 'analysis', 
-        'credits', 'referral', 'export'', 
+        'credits', 'referral', 'export', 
         'settings', 'finish'
     ]
     
@@ -175,7 +175,7 @@ async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAU
     # Pobierz aktualny stan onboardingu
     current_step = context.chat_data['user_data'][user_id]['onboarding_state']
     
-    # Lista kroków onboardingu - USUNIĘTE NIEDZIAŁAJĄCE FUNKCJE
+    # Lista kroków onboardingu
     steps = [
         'welcome', 'chat', 'modes', 'images', 'analysis', 
         'credits', 'referral', 'export', 'settings', 'finish'
@@ -197,59 +197,13 @@ async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAU
         if 'onboarding_state' in context.chat_data['user_data'][user_id]:
             del context.chat_data['user_data'][user_id]['onboarding_state']
         
-        # Wysyłamy zwykłą wiadomość tekstową zamiast zdjęcia
+        # Usuń wiadomość onboardingu
         try:
-            # Pobierz tekst powitalny
-            welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
-            # Usuń potencjalnie problematyczne znaki formatowania
-            clean_welcome_text = welcome_text.replace("*", "").replace("_", "").replace("`", "").replace("[", "").replace("]", "")
-            
-            # Utwórz klawiaturę menu
-            keyboard = [
-                [
-                    InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
-                    InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
-                ],
-                [
-                    InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
-                    InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
-                ],
-                [
-                    InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
-                    InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            # Wyślij wiadomość tekstową
-            message = await context.bot.send_message(
-                chat_id=query.message.chat_id,
-                text=clean_welcome_text,
-                reply_markup=reply_markup
-            )
-            
-            # Zapisz ID wiadomości menu
-            from handlers.menu_handler import store_menu_state
-            store_menu_state(context, user_id, 'main', message.message_id)
-            
-            # Usuń poprzednią wiadomość
-            try:
-                await query.message.delete()
-            except Exception as e2:
-                print(f"Błąd przy usuwaniu starej wiadomości: {e2}")
-            
-            return
+            await query.message.delete()
         except Exception as e:
-            print(f"Błąd przy zakończeniu onboardingu: {e}")
-            # Próbujemy wyświetlić komunikat o błędzie
-            try:
-                await context.bot.send_message(
-                    chat_id=query.message.chat_id,
-                    text="Wystąpił błąd podczas kończenia przewodnika. Spróbuj użyć komendy /start, aby powrócić do menu głównego."
-                )
-            except:
-                pass
-            return
+            print(f"Błąd przy usuwaniu wiadomości onboardingu: {e}")
+        
+        return
     else:
         # Nieznany callback
         return
@@ -310,15 +264,6 @@ async def handle_onboarding_callback(update: Update, context: ContextTypes.DEFAU
             )
         except Exception as e2:
             print(f"Nie udało się zaktualizować wiadomości: {e2}")
-            try:
-                # Ostateczna próba - wyślij nową wiadomość tekstową
-                await context.bot.send_message(
-                    chat_id=query.message.chat_id,
-                    text=text,
-                    reply_markup=reply_markup
-                )
-            except Exception as e3:
-                print(f"Wszystkie próby aktualizacji wiadomości zawiodły: {e3}")
                 
 # Handlers dla podstawowych komend
 
