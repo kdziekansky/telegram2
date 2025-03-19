@@ -50,8 +50,7 @@ async def translate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
     
     # Jeśli nie ma odpowiedzi ani argumentów, wyświetl instrukcje
-    instruction_text = get_text("translate_instruction", language, default="📄 **Text Translation**
-
+    instruction_text = get_text("translate_instruction", language, default="📄 **Text Translation**\n\nAvailable options:\n\n1️⃣ Send a photo with text to translate and add /translate in the caption or reply to the photo with the /translate command\n\n2️⃣ Send a document and reply to it with the /translate command\n\n3️⃣ Use the command /translate [target_language] [text]\nFor example: /translate en Hello world!\n\nAvailable target languages: en (English), pl (Polish), ru (Russian), fr (French), de (German), es (Spanish), it (Italian), zh (Chinese)")
 Available options:
 
 1️⃣ Send a photo with text to translate and add /translate in the caption or reply to the photo with the /translate command

@@ -957,22 +957,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             # Wyślij informację o błędzie
             await query.answer(f"Error: {str(e)}")
             return
-        return
-        except Exception as e:
-            print(f"Błąd w obsłudze trybu: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            # Wyślij informację o błędzie
-            await query.answer(f"Error: {str(e)}")
-            return
-        return
-        except Exception as e:
-            print(f"Błąd w obsłudze trybu: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            # Wyślij informację o błędzie
-            await query.answer(f"Błąd: {str(e)}")
-            return
 
     # Obsługa tematów konwersacji
     if query.data.startswith("theme_") or query.data == "new_theme" or query.data == "no_theme":
