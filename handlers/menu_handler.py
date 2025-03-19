@@ -632,12 +632,18 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Próba wysłania nowej wiadomości bez formatowania Markdown
+        # Pobierz bogaty tekst powitalny
+        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
+
+        # Zamiast wysyłać zwykłą wiadomość, wyślij zdjęcie z tekstem
         try:
-            message = await context.bot.send_message(
+            banner_url = "https://i.imgur.com/OiPImmC.png"  # URL zdjęcia banera
+            message = await context.bot.send_photo(
                 chat_id=query.message.chat_id,
-                text="Menu główne",
-                reply_markup=reply_markup
+                photo=banner_url,
+                caption=welcome_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
             )
             
             # Zapisz ID nowej wiadomości menu
@@ -646,12 +652,13 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             # Usuń starą wiadomość
             try:
                 await query.message.delete()
-            except Exception as e:
-                print(f"Nie można usunąć starej wiadomości: {e}")
+            except:
+                pass
             
             return True
         except Exception as e:
-            print(f"Wszystkie próby wysłania wiadomości zawiodły: {e}")
+            print(f"Błąd przy obsłudze menu_back_main: {e}")
+            # W przypadku błędu, kontynuujemy do standardowej obsługi
             return False
 
     # NOWA OPCJA - obsługa przycisku zmiany nazwy
