@@ -177,16 +177,10 @@ async def analyze_document(file_content, file_name, mode="analyze", target_langu
             try:
                 # Próbuj odkodować jako UTF-8
                 file_text = file_content.decode('utf-8')
-                messages[1]["content"] += f"
-
-File content:
-
-{file_text}"
+                messages[1]["content"] += f"\n\nFile content:\n\n{file_text}"
             except UnicodeDecodeError:
                 # Jeśli nie możemy odkodować, traktuj jako plik binarny
-                messages[1]["content"] += "
-
-The file contains binary data that cannot be displayed as text."
+                messages[1]["content"] += "\n\nThe file contains binary data that cannot be displayed as text."
         
         response = await client.chat.completions.create(
             model="gpt-4o",  # Używamy GPT-4o dla lepszej jakości
@@ -198,6 +192,7 @@ The file contains binary data that cannot be displayed as text."
     except Exception as e:
         print(f"Błąd analizy dokumentu: {e}")
         return f"Sorry, an error occurred while analyzing the document: {str(e)}"
+
 async def analyze_image(image_content, image_name, mode="analyze", target_language="en"):
     """
     Analizuj obraz za pomocą OpenAI API

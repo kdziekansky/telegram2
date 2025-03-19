@@ -58,6 +58,9 @@ from handlers.start_handler import (
 # Import handlera obrazów
 from handlers.image_handler import generate_image
 
+# Import handlera mode
+from handlers.mode_handler import handle_mode_selection, show_modes
+
 from utils.openai_client import (
     chat_completion_stream, prepare_messages_from_history,
     generate_image_dall_e, analyze_document, analyze_image
@@ -479,41 +482,6 @@ async def show_models(update: Update, context: ContextTypes.DEFAULT_TYPE, edit_m
             reply_markup=reply_markup
         )
 
-async def show_modes(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Pokazuje dostępne tryby czatu"""
-    user_id = update.effective_user.id
-    language = get_user_language(context, user_id)
-    
-    # Sprawdź, czy użytkownik ma kredyty
-    credits = get_user_credits(user_id)
-    if credits <= 0:
-        await update.message.reply_text(get_text("subscription_expired", language))
-        return
-    
-    # Utwórz przyciski dla dostępnych trybów
-    keyboard = []
-    for mode_id, mode_info in CHAT_MODES.items():
-        # Pobierz przetłumaczoną nazwę trybu
-        mode_name = get_text(f"chat_mode_{mode_id}", language, default=mode_info['name'])
-        # Pobierz przetłumaczony tekst dla kredytów
-        credit_text = get_text("credit", language, default="kredyt")
-        if mode_info['credit_cost'] != 1:
-            credit_text = get_text("credits", language, default="kredytów")
-        
-        keyboard.append([
-            InlineKeyboardButton(
-                text=f"{mode_name} ({mode_info['credit_cost']} {credit_text})", 
-                callback_data=f"mode_{mode_id}"
-            )
-        ])
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.message.reply_text(
-        get_text("select_chat_mode", language),
-        reply_markup=reply_markup
-    )
-
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Obsługa wiadomości tekstowych od użytkownika ze strumieniowaniem odpowiedzi"""
     user_id = update.effective_user.id
@@ -851,21 +819,6 @@ async def handle_photo_translate(update: Update, context: ContextTypes.DEFAULT_T
             parse_mode=ParseMode.MARKDOWN
         )
         
-async def translate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Obsługa komendy /translate
-    Instruuje użytkownika jak korzystać z funkcji tłumaczenia
-    """
-    await update.message.reply_text(
-        "📸 *Tłumaczenie tekstu ze zdjęcia*\n\n"
-        "Aby przetłumaczyć tekst ze zdjęcia, możesz:\n"
-        "1. Przesłać zdjęcie z napisem '/translate' w podpisie\n"
-        "2. Przesłać zdjęcie, a następnie odpowiedzieć na nie komendą '/translate'\n"
-        "3. Kliknąć przycisk 'Przetłumacz tekst z tego zdjęcia' pod analizą zdjęcia\n\n"
-        "Tekst zostanie rozpoznany i przetłumaczony na język polski.",
-        parse_mode=ParseMode.MARKDOWN
-    )
-    
 async def show_translation_instructions(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Wyświetla instrukcje dotyczące tłumaczenia tekstu ze zdjęć
@@ -943,20 +896,27 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_model_selection(update, context, model_id)
         return
     
+    # Obsługa przycisków ustawień
+    elif query.data.startswith("settings_"):
+        print(f"Rozpoznano callback ustawień: {query.data}")
+        try:
+            from handlers.menu_handler import handle_menu_callback
+            result = await handle_menu_callback(update, context)
+            if not result:
+                await query.answer("Funkcja w trakcie implementacji.")
+            return
+        except Exception as e:
+            print(f"Błąd w obsłudze ustawień: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            await query.answer(f"Error: {str(e)}")
+            return
+    
     if query.data.startswith("mode_"):
         print(f"Rozpoznano callback trybu: {query.data}")
         mode_id = query.data[5:]  # Pobierz ID trybu (usuń prefix "mode_")
-        try:
-            from handlers.mode_handler import handle_mode_selection
-            await handle_mode_selection(update, context, mode_id)
-            return
-        except Exception as e:
-            print(f"Błąd w obsłudze trybu: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            # Wyślij informację o błędzie
-            await query.answer(f"Error: {str(e)}")
-            return
+        await handle_mode_selection(update, context, mode_id)
+        return
 
     # Obsługa tematów konwersacji
     if query.data.startswith("theme_") or query.data == "new_theme" or query.data == "no_theme":
@@ -1328,7 +1288,50 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         from handlers.reminder_handler import handle_reminder_callback
         await handle_reminder_callback(update, context)
         return
+    
+        # Specjalna obsługa przycisku powrotu do głównego menu
+    if query.data == "menu_back_main":
+        keyboard = [
+            [
+                InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes"),
+                InlineKeyboardButton(get_text("image_generate", language), callback_data="menu_image_generate")
+            ],
+            [
+                InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits"),
+                InlineKeyboardButton(get_text("menu_dialog_history", language), callback_data="menu_section_history")
+            ],
+            [
+                InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings"),
+                InlineKeyboardButton(get_text("menu_help", language), callback_data="menu_help")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
+        # Używanie welcome_message
+        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
+        
+        try:
+            # Wyślij nową wiadomość zamiast edytować starą
+            message = await context.bot.send_message(
+                chat_id=query.message.chat_id,
+                text=welcome_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
+            )
+            # Zapisz ID nowej wiadomości menu
+            store_menu_state(context, user_id, 'main', message.message_id)
+            
+            # Opcjonalnie usuń starą wiadomość
+            try:
+                await query.message.delete()
+            except:
+                pass
+                
+            return
+        except Exception as e:
+            print(f"Błąd przy obsłudze menu_back_main: {e}")
+            # W przypadku błędu, kontynuujemy do standardowej obsługi
+
     # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
     print(f"Nieobsłużony callback: {query.data}")
     try:
@@ -1344,184 +1347,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             )
     except:
         pass
-
-async def set_user_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Ustawia nazwę użytkownika
-    Użycie: /setname [nazwa]
-    """
-    user_id = update.effective_user.id
-    language = get_user_language(context, user_id)
-    
-    # Sprawdź, czy podano argumenty
-    if not context.args or len(' '.join(context.args)) < 1:
-        await update.message.reply_text(
-            get_text("settings_change_name", language),
-            parse_mode=ParseMode.MARKDOWN
-        )
-        return
-    
-    # Połącz argumenty, aby utworzyć nazwę
-    new_name = ' '.join(context.args)
-    
-    # Ogranicz długość nazwy
-    if len(new_name) > 50:
-        new_name = new_name[:47] + "..."
-    
-    try:
-        # Zaktualizuj nazwę użytkownika w bazie danych
-        from database.sqlite_client import sqlite3, DB_PATH
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            "UPDATE users SET first_name = ? WHERE id = ?", 
-            (new_name, user_id)
-        )
-        conn.commit()
-        conn.close()
-        
-        # Zaktualizuj nazwę w kontekście, jeśli istnieje
-        if 'user_data' not in context.chat_data:
-            context.chat_data['user_data'] = {}
-        
-        if user_id not in context.chat_data['user_data']:
-            context.chat_data['user_data'][user_id] = {}
-        
-        context.chat_data['user_data'][user_id]['name'] = new_name
-        
-        # Potwierdź zmianę nazwy
-        await update.message.reply_text(
-            f"{get_text('name_changed', language)} *{new_name}*",
-            parse_mode=ParseMode.MARKDOWN
-        )
-    except Exception as e:
-        print(f"Błąd przy zmianie nazwy użytkownika: {e}")
-        await update.message.reply_text(
-            "Wystąpił błąd podczas zmiany nazwy. Spróbuj ponownie później.",
-            parse_mode=ParseMode.MARKDOWN
-        )
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Obsługa komendy /help
-    Wyświetla informacje pomocnicze o bocie
-    """
-    user_id = update.effective_user.id
-    language = get_user_language(context, user_id)
-    
-    # Pobierz tekst pomocy z tłumaczeń
-    help_text = get_text("help_text", language)
-    
-    # Wyślij wiadomość pomocy
-    await update.message.reply_text(
-        help_text,
-        parse_mode=ParseMode.MARKDOWN
-    )
-
-
-async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, mode_id):
-    """Obsługa wyboru trybu czatu"""
-    query = update.callback_query
-    user_id = query.from_user.id
-    language = get_user_language(context, user_id)
-    
-    print(f"Obsługiwanie wyboru trybu: {mode_id}")
-    
-    # Sprawdź, czy tryb istnieje
-    if mode_id not in CHAT_MODES:
-        try:
-            if hasattr(query.message, 'caption'):
-                await query.edit_message_caption(
-                    caption=get_text("model_not_available", language),
-                    parse_mode=ParseMode.MARKDOWN
-                )
-            else:
-                await query.edit_message_text(
-                    text=get_text("model_not_available", language),
-                    parse_mode=ParseMode.MARKDOWN
-                )
-        except Exception as e:
-            print(f"Błąd przy edycji wiadomości: {e}")
-        return
-    
-    # Zapisz wybrany tryb w kontekście użytkownika
-    if 'user_data' not in context.chat_data:
-        context.chat_data['user_data'] = {}
-    
-    if user_id not in context.chat_data['user_data']:
-        context.chat_data['user_data'][user_id] = {}
-    
-    context.chat_data['user_data'][user_id]['current_mode'] = mode_id
-    
-    # Jeśli tryb ma określony model, ustaw go również
-    if "model" in CHAT_MODES[mode_id]:
-        context.chat_data['user_data'][user_id]['current_model'] = CHAT_MODES[mode_id]["model"]
-    
-    # Pobierz przetłumaczoną nazwę trybu i inne informacje
-    mode_name = get_text(f"chat_mode_{mode_id}", language, default=CHAT_MODES[mode_id]["name"])
-    mode_description = CHAT_MODES[mode_id]["prompt"]
-    credit_cost = CHAT_MODES[mode_id]["credit_cost"]
-    
-    # Skróć opis, jeśli jest zbyt długi
-    if len(mode_description) > 100:
-        short_description = mode_description[:97] + "..."
-    else:
-        short_description = mode_description
-    
-    # Używaj tłumaczeń zamiast hardcodowanych tekstów
-    message_text = get_text("mode_selected_message", language, 
-                          mode_name=mode_name,
-                          credit_cost=credit_cost,
-                          description=short_description)
-    
-    # Jeśli tłumaczenie nie istnieje, użyj zbudowanego tekstu z przetłumaczonych fragmentów
-    if message_text == "mode_selected_message":
-        message_text = f"{get_text('selected_mode', language, default='Wybrany tryb')}: *{mode_name}*\n"
-        message_text += f"{get_text('cost', language)}: *{credit_cost}* {get_text('credits_per_message', language)}\n\n"
-        message_text += f"{get_text('description', language, default='Opis')}: _{short_description}_\n\n"
-        message_text += f"{get_text('ask_question_now', language, default='Możesz teraz zadać pytanie w wybranym trybie.')}"
-    
-    # Dodaj przyciski powrotu do menu trybów
-    keyboard = [
-        [InlineKeyboardButton(get_text("back", language), callback_data="menu_section_chat_modes")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    try:
-        # Sprawdź typ wiadomości i użyj odpowiedniej metody
-        if hasattr(query.message, 'caption'):
-            await query.edit_message_caption(
-                caption=message_text,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup
-            )
-        else:
-            await query.edit_message_text(
-                text=message_text,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup
-            )
-    except Exception as e:
-        print(f"Błąd przy edycji wiadomości: {e}")
-        try:
-            # Bez formatowania Markdown
-            if hasattr(query.message, 'caption'):
-                await query.edit_message_caption(
-                    caption=message_text,
-                    reply_markup=reply_markup
-                )
-            else:
-                await query.edit_message_text(
-                    text=message_text,
-                    reply_markup=reply_markup
-                )
-        except Exception as e2:
-            print(f"Drugi błąd przy edycji wiadomości: {e2}")
-        
-    # Utwórz nową konwersację dla wybranego trybu
-    from database.sqlite_client import create_new_conversation
-    create_new_conversation(user_id)
 
 async def handle_model_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, model_id):
     """Obsługa wyboru modelu AI"""
@@ -1679,7 +1504,7 @@ def main():
     # Inicjalizacja aplikacji
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
-    # Następnie dodaj handler dla tej komendy w funkcji main():
+    # Handler dla help
     application.add_handler(CommandHandler("help", help_command))
 
     # Handler dla setname

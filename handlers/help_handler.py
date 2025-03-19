@@ -18,20 +18,35 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Pobierz tekst pomocy z tłumaczeń
     help_text = get_text("help_text", language)
     
-    # Dodaj przyciski menu
+    # Dodaj tylko przycisk Menu
     keyboard = [
-        [InlineKeyboardButton(get_text("menu_chat_mode", language), callback_data="menu_section_chat_modes")],
-        [InlineKeyboardButton(get_text("menu_credits", language), callback_data="menu_section_credits")],
-        [InlineKeyboardButton(get_text("menu_settings", language), callback_data="menu_section_settings")]
+        [InlineKeyboardButton("Menu", callback_data="menu_back_main")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    # Wyślij wiadomość pomocy
-    await update.message.reply_text(
-        help_text,
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=reply_markup
-    )
+    try:
+        # Próba wysłania z formatowaniem Markdown
+        await update.message.reply_text(
+            help_text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        # W przypadku błędu, spróbuj wysłać bez formatowania
+        print(f"Błąd formatowania Markdown w help_command: {e}")
+        try:
+            await update.message.reply_text(
+                help_text,
+                reply_markup=reply_markup
+            )
+        except Exception as e2:
+            print(f"Drugi błąd w help_command: {e2}")
+            # Ostateczna próba - wysłanie uproszczonego tekstu pomocy
+            simple_help = "Pomoc i informacje o bocie. Dostępne komendy: /start, /credits, /buy, /status, /newchat, /mode, /image, /restart, /help, /code."
+            await update.message.reply_text(
+                simple_help,
+                reply_markup=reply_markup
+            )
 
 async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -97,4 +112,9 @@ async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    try:
+        await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    except Exception as e:
+        print(f"Błąd formatowania w check_status: {e}")
+        # Próba wysłania bez formatowania
+        await update.message.reply_text(message, reply_markup=reply_markup)
