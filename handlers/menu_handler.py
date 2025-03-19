@@ -44,30 +44,8 @@ def get_user_language(context, user_id):
     except Exception as e:
         print(f"Błąd pobierania języka z bazy: {e}")
     
-    # Sprawdź language_code, jeśli nie znaleziono language
-        try:
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            
-            cursor.execute("SELECT language_code FROM users WHERE id = ?", (user_id,))
-            result = cursor.fetchone()
-            conn.close()
-            
-            if result and result[0]:
-                # Zapisz w kontekście na przyszłość
-                if 'user_data' not in context.chat_data:
-                    context.chat_data['user_data'] = {}
-                
-                if user_id not in context.chat_data['user_data']:
-                    context.chat_data['user_data'][user_id] = {}
-                
-                context.chat_data['user_data'][user_id]['language'] = result[0]
-                return result[0]
-        except Exception as e:
-            print(f"Błąd pobierania language_code z bazy: {e}")
-        
-        # Domyślny język, jeśli wszystkie metody zawiodły
-        return "pl"
+    # Domyślny język, jeśli nie znaleziono w bazie
+    return "pl"
 
 def get_user_current_mode(context, user_id):
     """Pobiera aktualny tryb czatu użytkownika"""
@@ -472,7 +450,6 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
                     reply_markup=reply_markup
                 )
         return True
-    
         
     elif query.data == "menu_image_generate":
         # Menu generowania obrazów
@@ -655,39 +632,27 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Używanie welcome_message zamiast main_menu
-        welcome_text = get_text("welcome_message", language, bot_name=BOT_NAME)
-        
+        # Próba wysłania nowej wiadomości bez formatowania Markdown
         try:
-            # Sprawdź, czy wiadomość zawiera zdjęcie (ma podpis)
-            if hasattr(query.message, 'caption'):
-                # Wiadomość ma podpis (jest to zdjęcie lub inny typ mediów)
-                await query.edit_message_caption(
-                    caption=welcome_text,
-                    reply_markup=reply_markup,
-                    parse_mode=ParseMode.MARKDOWN
-                )
-            else:
-                # Standardowa wiadomość tekstowa
-                await query.edit_message_text(
-                    text=welcome_text,
-                    reply_markup=reply_markup,
-                    parse_mode=ParseMode.MARKDOWN
-                )
+            message = await context.bot.send_message(
+                chat_id=query.message.chat_id,
+                text="Menu główne",
+                reply_markup=reply_markup
+            )
+            
+            # Zapisz ID nowej wiadomości menu
+            store_menu_state(context, user_id, 'main', message.message_id)
+            
+            # Usuń starą wiadomość
+            try:
+                await query.message.delete()
+            except Exception as e:
+                print(f"Nie można usunąć starej wiadomości: {e}")
+            
+            return True
         except Exception as e:
-            print(f"Błąd formatowania: {e}")
-            # Próba wysłania bez formatowania Markdown
-            if hasattr(query.message, 'caption'):
-                await query.edit_message_caption(
-                    caption=welcome_text,
-                    reply_markup=reply_markup
-                )
-            else:
-                await query.edit_message_text(
-                    text=welcome_text,
-                    reply_markup=reply_markup
-                )
-        return True
+            print(f"Wszystkie próby wysłania wiadomości zawiodły: {e}")
+            return False
 
     # NOWA OPCJA - obsługa przycisku zmiany nazwy
     elif query.data == "settings_name":
@@ -791,7 +756,6 @@ async def handle_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     
     # Jeśli dotarliśmy tutaj, oznacza to, że callback nie został obsłużony
     return False
-
 
 async def set_user_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
