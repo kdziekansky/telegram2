@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode, ChatAction
 from config import DEFAULT_MODEL, MAX_CONTEXT_MESSAGES, AVAILABLE_MODELS, CHAT_MODES
-from database.sqlite_client import (
+from database.supabase_client import (
     check_active_subscription, get_active_conversation, 
     save_message, get_conversation_history, check_message_limit,
     increment_messages_used, get_message_status

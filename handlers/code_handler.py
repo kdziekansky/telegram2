@@ -25,7 +25,7 @@ def get_user_language(context, user_id):
     
     # Jeśli nie, pobierz z bazy danych
     try:
-        from database.sqlite_client import sqlite3, DB_PATH
+        from database.supabase_client import sqlite3, DB_PATH
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         

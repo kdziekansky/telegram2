@@ -22,7 +22,7 @@ from config import (
 from utils.translations import get_text
 
 # Import funkcji z modułu sqlite_client
-from database.sqlite_client import (
+from database.supabase_client import (
     get_or_create_user, create_new_conversation, 
     get_active_conversation, save_message, 
     get_conversation_history, get_message_status
@@ -898,7 +898,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         language = get_user_language(context, user_id)
         
         # Pobierz aktywną konwersację
-        from database.sqlite_client import get_active_conversation, get_conversation_history
+        from database.supabase_client import get_active_conversation, get_conversation_history
         conversation = get_active_conversation(user_id)
         
         if not conversation:

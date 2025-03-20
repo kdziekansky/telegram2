@@ -2,7 +2,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from database.sqlite_client import (
+from database.supabase_client import (
     create_conversation_theme, get_user_themes, 
     get_theme_by_id, get_active_themed_conversation
 )
@@ -151,7 +151,7 @@ async def handle_theme_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 del context.chat_data['user_data'][user_id]['current_theme_name']
         
         # Utwórz nową konwersację bez tematu
-        from database.sqlite_client import create_new_conversation
+        from database.supabase_client import create_new_conversation
         conversation = create_new_conversation(user_id)
         
         await query.edit_message_text(
@@ -209,7 +209,7 @@ async def notheme_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             del context.chat_data['user_data'][user_id]['current_theme_name']
     
     # Utwórz nową konwersację bez tematu
-    from database.sqlite_client import create_new_conversation
+    from database.supabase_client import create_new_conversation
     conversation = create_new_conversation(user_id)
     
     await update.message.reply_text(

@@ -4,7 +4,7 @@ from telegram.constants import ParseMode
 from config import CHAT_MODES, AVAILABLE_LANGUAGES, AVAILABLE_MODELS, CREDIT_COSTS, DEFAULT_MODEL, BOT_NAME
 from utils.translations import get_text
 from database.credits_client import get_user_credits
-from database.sqlite_client import update_user_language
+from database.supabase_client import update_user_language
 from database.credits_client import get_user_credits, get_credit_packages
 from config import BOT_NAME
 
@@ -18,7 +18,7 @@ def get_user_language(context, user_id):
     
     # Jeśli nie, pobierz z bazy danych
     try:
-        from database.sqlite_client import sqlite3, DB_PATH
+        from database.supabase_client import sqlite3, DB_PATH
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
@@ -506,7 +506,7 @@ async def handle_history_view(update, context):
     language = get_user_language(context, user_id)
     
     # Pobierz aktywną konwersację
-    from database.sqlite_client import get_active_conversation, get_conversation_history
+    from database.supabase_client import get_active_conversation, get_conversation_history
     conversation = get_active_conversation(user_id)
     
     if not conversation:
@@ -1008,7 +1008,7 @@ async def set_user_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     try:
         # Zaktualizuj nazwę użytkownika w bazie danych
-        from database.sqlite_client import sqlite3, DB_PATH
+        from database.supabase_client import sqlite3, DB_PATH
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         

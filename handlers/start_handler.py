@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import BOT_NAME, AVAILABLE_LANGUAGES
 from utils.translations import get_text
-from database.sqlite_client import get_or_create_user, get_message_status
+from database.supabase_client import get_or_create_user, get_message_status
 from database.credits_client import get_user_credits
 
 # Zabezpieczony import z awaryjnym fallbackiem
@@ -42,7 +42,7 @@ def get_user_language(context, user_id):
     
     # Jeśli nie, pobierz z bazy danych
     try:
-        from database.sqlite_client import sqlite3, DB_PATH
+        from database.supabase_client import sqlite3, DB_PATH
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
@@ -174,7 +174,7 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
         
         # Zapisz język w bazie danych - używamy nowej funkcji
         try:
-            from database.sqlite_client import update_user_language
+            from database.supabase_client import update_user_language
             update_user_language(user_id, language)
         except Exception as e:
             print(f"Błąd zapisywania języka: {e}")

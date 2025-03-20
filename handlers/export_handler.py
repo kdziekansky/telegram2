@@ -2,7 +2,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode, ChatAction
-from database.sqlite_client import get_active_conversation, get_conversation_history, get_or_create_user
+from database.supabase_client import get_active_conversation, get_conversation_history, get_or_create_user
 from utils.pdf_generator import generate_conversation_pdf
 from config import BOT_NAME
 from utils.translations import get_text

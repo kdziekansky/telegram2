@@ -135,5 +135,5 @@ async def handle_mode_selection(update: Update, context: ContextTypes.DEFAULT_TY
             print(f"Drugi błąd przy edycji wiadomości: {e2}")
         
     # Utwórz nową konwersację dla wybranego trybu
-    from database.sqlite_client import create_new_conversation
+    from database.supabase_client import create_new_conversation
     create_new_conversation(user_id)

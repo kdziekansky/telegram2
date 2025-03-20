@@ -5,7 +5,7 @@ from config import DEFAULT_MODEL, BOT_NAME, SUBSCRIPTION_PLANS, CREDIT_COSTS, AV
 from utils.translations import get_text
 from handlers.menu_handler import get_user_language
 from database.credits_client import get_user_credits
-from database.sqlite_client import get_message_status
+from database.supabase_client import get_message_status
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """

@@ -65,7 +65,7 @@ def initialize_templates_in_database():
     """
     try:
         # Zmiana z Supabase na SQLite
-        from database.sqlite_client import save_prompt_template, get_prompt_templates
+        from database.supabase_client import save_prompt_template, get_prompt_templates
         
         # Pobierz istniejące szablony
         existing_templates = get_prompt_templates()
